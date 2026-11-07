@@ -1143,3 +1143,11 @@ body.profile-open #mobile-app-nav { display: flex !important; z-index: 9999; pos
  #products-grid .product-card-photo {height:auto!important;max-height:none!important;object-fit:contain!important;aspect-ratio:auto!important;}
  #products-grid > * > div:last-child {margin-top:0!important;}
 }
+
+/* CUPISSA | Mosaico móvil estable: dos columnas independientes.
+   Las fichas existentes NO se recolocan al cargar más productos. */
+@media (max-width:767px) {
+  #products-grid:not(.hidden) { display:flex!important; columns:auto!important; align-items:flex-start!important; gap:10px!important; }
+  #products-grid > .cupissa-mosaic-column { display:flex!important; flex:1 1 0!important; min-width:0!important; flex-direction:column!important; gap:10px!important; }
+  #products-grid > .cupissa-mosaic-column > * { display:flex!important; flex-direction:column!important; width:100%!important; max-width:100%!important; margin:0!important; min-height:0!important; height:auto!important; }
+}
