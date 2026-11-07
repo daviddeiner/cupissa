@@ -28,7 +28,10 @@ function variantChips(kind){
   [...select.options].forEach((option,i)=>{
     if(!option.value)return;
     const button=document.createElement('button');button.type='button';button.className='app-variant-choice'+(kind==='color'?' app-color-choice':'');button.dataset.value=option.value;
-    const photo=kind==='color'&&option.dataset.photo;
+    const product=typeof selectedProductModal!=='undefined'?selectedProductModal:null;
+    const colors=product?.colores||[];
+    const photos=product?.fotos||[];
+    const photo=kind==='color'&&(option.dataset.photo||(colors.length===photos.length?photos[i]:''));
     if(photo){const picture=document.createElement('img');picture.src=photo;picture.alt='';picture.loading='lazy';button.appendChild(picture)}
     const label=document.createElement('span');label.textContent=option.textContent.trim();button.appendChild(label);
     button.addEventListener('click',()=>{
