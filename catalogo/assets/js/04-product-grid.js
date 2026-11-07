@@ -76,8 +76,8 @@ function renderSeasonFeatured() {
     }
     section.classList.remove('hidden');
     if (name) name.textContent = featuredSeasonName ? `· ${featuredSeasonName}` : '';
-    grid.innerHTML = '';
-    // No volver a construir destacados cuando llega otro lote del catálogo.
+    // Conservar las tarjetas destacadas existentes cuando se añade otro lote.
+    // No borrar la grilla antes de comparar la lista actual.
     const featuredKey = featuredSeasonProducts.map(product => String(product.id)).join('|');
     if (grid.dataset.featuredKey !== featuredKey || grid.children.length !== featuredSeasonProducts.length) {
         grid.replaceChildren();
