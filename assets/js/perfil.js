@@ -617,7 +617,7 @@
       AUTH().clearGoogleIntent();
       showAuth();
       showAuthMode('register');
-      showMessage('profile-register-error', 'La dirección anterior de Google ya no pertenece a esa cuenta CUPISSA. Para utilizarla nuevamente, crea una cuenta nueva.');
+      showMessage('profile-register-error', 'Este correo de Google ya no está asociado a la cuenta anterior. Para crear una cuenta nueva con él, primero debe quedar desvinculado de la identidad anterior en Supabase. No se reutilizarán los datos del cliente anterior.');
       return true;
     }
 
