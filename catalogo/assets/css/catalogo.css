@@ -1093,3 +1093,44 @@ body.profile-open #mobile-app-nav { display: flex !important; z-index: 9999; pos
 @media (min-width: 640px) {
     #accessory-options-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
+
+
+/* CUPISSA WEB | Destacados con altura natural según fotografía (móvil y PC).
+   No afecta la cuadrícula general, los precios ni la interacción de las fichas. */
+#season-featured-grid { align-items: start !important; }
+#season-featured-grid > * {
+  height: max-content !important;
+  min-height: 0 !important;
+  align-self: start !important;
+  justify-content: flex-start !important;
+}
+#season-featured-grid > * > div:first-child { flex: 0 0 auto !important; }
+#season-featured-grid .product-card-photo {
+  display: block !important;
+  width: 100% !important;
+  height: auto !important;
+  max-height: none !important;
+  aspect-ratio: auto !important;
+  object-fit: contain !important;
+}
+#season-featured-grid > * > div:last-child { margin-top: 0 !important; }
+
+
+/* CUPISSA | Tarjetas de altura natural en TODOS los listados. */
+#products-grid, #season-featured-grid { align-items: start !important; align-content: start !important; }
+#products-grid > *, #season-featured-grid > * {
+  height: auto !important; min-height: 0 !important; align-self: start !important;
+  display: flex !important; flex-direction: column !important; justify-content: flex-start !important;
+}
+#products-grid > * > div:first-child, #season-featured-grid > * > div:first-child { flex: 0 0 auto !important; }
+#products-grid > * > div:last-child, #season-featured-grid > * > div:last-child {
+  flex: 0 0 auto !important; margin-top: 0 !important;
+}
+#products-grid .product-card-photo, #season-featured-grid .product-card-photo {
+  display: block !important; width: 100% !important; height: auto !important;
+  max-height: min(65vw, 380px) !important; aspect-ratio: auto !important;
+  object-fit: contain !important;
+}
+@media (min-width:768px) {
+ #products-grid .product-card-photo, #season-featured-grid .product-card-photo {max-height: 340px !important;}
+}
