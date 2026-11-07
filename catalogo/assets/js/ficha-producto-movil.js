@@ -18,6 +18,7 @@ const thumbs=document.getElementById('opt-modal-thumbs');
 const img=document.getElementById('opt-modal-img');
 function updateCount(){const len=window.selectedProductModal?.fotos?.length||thumbs?.querySelectorAll('img').length||0;const active=Math.max(0,[...thumbs?.querySelectorAll('img')||[]].findIndex(node=>node.classList.contains('fuchsia-border')));if(count){count.textContent=len>1?`${Math.min(len,active+1)}/${len}`:'';count.hidden=len<2}}
 function variantChips(kind){
+  if(kind==='size')return;
   const wrapper=document.getElementById(kind==='size'?'wrapper-tallas':'wrapper-colores');
   const select=document.getElementById(kind==='size'?'opt-select-talla':'opt-select-color');
   if(!wrapper||!select)return;
@@ -54,7 +55,9 @@ if(typeof oldColorChange==='function')window.handleProductColorChange=function(.
 const oldOpen=window.openOptionsModal;
 if(typeof oldOpen==='function')window.openOptionsModal=function(...args){
   const result=oldOpen(...args);
-  variantChips('size');variantChips('color');
+  document.getElementById('wrapper-tallas')?.querySelector('.app-variant-choices')?.remove();
+  document.getElementById('wrapper-tallas')?.classList.remove('app-has-variant-chips');
+  variantChips('color');
   document.body.classList.add('cupissa-product-open');
   if(inner)inner.scrollTop=0;
   requestAnimationFrame(updateCount);
