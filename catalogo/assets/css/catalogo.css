@@ -1134,3 +1134,12 @@ body.profile-open #mobile-app-nav { display: flex !important; z-index: 9999; pos
 @media (min-width:768px) {
  #products-grid .product-card-photo, #season-featured-grid .product-card-photo {max-height: 340px !important;}
 }
+
+/* CUPISSA 2026-11 | Catálogo móvil sin huecos entre fichas de distintas alturas. */
+@media (max-width:767px) {
+ #products-grid:not(.hidden) { display:block!important; columns:2!important; column-gap:10px!important; align-items:initial!important; }
+ #products-grid > * { display:inline-flex!important; vertical-align:top!important; width:100%!important; max-width:100%!important; margin:0 0 10px!important; break-inside:avoid!important; -webkit-column-break-inside:avoid!important; page-break-inside:avoid!important; height:auto!important; min-height:0!important; }
+ #products-grid > .cupissa-empty-state, #products-grid > .col-span-full {display:block!important;column-span:all!important;width:100%!important;}
+ #products-grid .product-card-photo {height:auto!important;max-height:none!important;object-fit:contain!important;aspect-ratio:auto!important;}
+ #products-grid > * > div:last-child {margin-top:0!important;}
+}
