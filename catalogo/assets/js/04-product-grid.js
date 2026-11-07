@@ -7,6 +7,7 @@ function catalogProductCard(prod, options = {}) {
     const basePrice = hasRentalPrice ? Number(prod.precio_alquiler) : Number(prod.precio_detal || 0);
     const basePriceLabel = 'Desde';
     const card = document.createElement('div');
+    const productPermalink = `/producto/${encodeURIComponent(String(prod.id))}/`;
     card.className = options.featured
         ? 'bg-white rounded-2xl overflow-hidden border border-pink-100 shadow-sm hover:shadow-md transition-all flex flex-col justify-between group cursor-pointer'
         : 'bg-white rounded-2xl sm:rounded-3xl overflow-hidden border border-slate-100 shadow-sm hover:shadow-md transition-all flex flex-col justify-between group cursor-pointer';
@@ -34,7 +35,7 @@ function catalogProductCard(prod, options = {}) {
             </div>
             <div class="p-2.5 sm:p-4 space-y-1 sm:space-y-2">
                 <span class="text-[9px] sm:text-[10px] font-black uppercase text-pink-600 tracking-wider">${(prod.temporadas?.length ? prod.temporadas : [prod.temporada]).filter(Boolean).join(' - ')}</span>
-                <h3 class="product-card-title font-extrabold text-slate-900 text-[10px] leading-snug sm:text-xs uppercase tracking-tight">${prod.nombre}</h3>
+                <h3 class="product-card-title font-extrabold text-slate-900 text-[10px] leading-snug sm:text-xs tracking-tight"><a data-card-ignore-open href="${productPermalink}" class="hover:text-pink-700 hover:underline" aria-label="Ver ficha de ${prod.nombre}">${prod.nombre}</a></h3>
                 <div class="product-activity" data-activity-product="${String(prod.id)}" hidden aria-live="polite">
                     <span><i class="fa-regular fa-eye"></i><strong data-activity-viewers>20+</strong> personas viendo</span>
                     <small class="activity-disclaimer"></small>
@@ -167,7 +168,7 @@ function renderProductsGrid() {
         window.loadProductActivityMetrics(activityProducts);
     }
     statusContainer.classList.remove('hidden');
-    loadingMsg.classList.add('hidden');
+    loadingMsg.classList.toggle('hidden', displayLimit >= filteredProducts.length);
     if (displayLimit >= filteredProducts.length) endMsg.classList.remove('hidden');
     else endMsg.classList.add('hidden');
 }
