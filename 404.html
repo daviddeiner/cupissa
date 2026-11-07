@@ -22,6 +22,13 @@
         ['/perfil.html', '/perfil/'],
         ['/index.html', '/catalogo/']
       ]);
+      // Si todavía no se ha generado la ficha HTML del producto, conservar
+      // el enlace y abrir su ficha de compra directamente en el catálogo.
+      const missingProduct = path.match(/^\/producto\/([A-Za-z0-9_-]{1,90})\/?(?:index\.html)?$/i);
+      if (missingProduct) {
+        location.replace('/catalogo/?producto=' + encodeURIComponent(missingProduct[1]));
+        return;
+      }
       const destination = legacy.get(path);
       if (destination) {
         location.replace(destination + location.search + location.hash);
