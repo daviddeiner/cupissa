@@ -26,7 +26,7 @@
     <!-- Contenedor dinámico para Datos Estructurados (SEO Google Images) -->
     <script id="seo-schema-script" type="application/ld+json"></script>
 
-    <link rel="stylesheet" href="/catalogo/assets/css/catalogo.css?v=20261107-masonry4">
+    <link rel="stylesheet" href="/catalogo/assets/css/catalogo.css?v=20261107-banner20-auto5-v1">
 <link rel="stylesheet" href="/catalogo/assets/css/ficha-producto-movil.css?v=restore-pink-sizes-20261107-2">
 <script>
 (function(){
@@ -50,7 +50,7 @@
                     <a href="/catalogo/" class="leading-none">
                         <img src="/catalogo/assets/images/logo.png" alt="CUPISSA - Catálogo de productos" class="h-7 sm:h-10 w-auto object-contain">
                     </a>
-                    <button id="install-app-button" type="button" onclick="handleInstallApp()" class="install-app-button" aria-label="Descargar aplicación CUPISSA">
+                    <button id="install-app-button" type="button" hidden onclick="handleInstallApp()" class="install-app-button" aria-label="Descargar aplicación CUPISSA">
                         <i class="fa-solid fa-download" aria-hidden="true"></i><span>Descargar aplicación</span>
                     </button>
                 </div>
@@ -97,6 +97,7 @@
     <!-- AVISO FIJO: permanece visible mientras se recorre el catálogo -->
     <div class="catalog-promo-banner bg-pink-50 border border-pink-200 text-pink-900 px-3 py-2.5 rounded-xl sm:rounded-2xl text-xs sm:text-sm font-semibold text-center shadow-xs leading-tight">
         <strong>Somos fabricantes y hacemos productos a tu gusto. ¿Buscas algo fuera del catálogo? Cotízalo por WhatsApp: <a href="https://wa.me/573147671380" target="_blank" rel="noopener" class="font-black underline text-pink-700 hover:text-pink-900">3147671380</a></strong>
+        <span class="catalog-shipping-note">Envíos a toda Colombia</span>
     </div>
 
     <!-- ORGANIZACIÓN RESPONSIVE DEL CATÁLOGO -->
@@ -479,11 +480,11 @@
 
     <!-- Lógica modular del catálogo. Se conserva el orden de carga para mantener las dependencias globales. -->
     <script src="/shared/js/supabase-config.js"></script>
-    <script src="/catalogo/assets/js/00-config-state.js"></script>
-    <script src="/catalogo/assets/js/01-initialization.js"></script>
+    <script src="/catalogo/assets/js/00-config-state.js?v=20261107-banner20-auto5-v1"></script>
+    <script src="/catalogo/assets/js/01-initialization.js?v=20261107-banner20-auto5-v1"></script>
     <script src="/catalogo/assets/js/02-product-data.js?v=20261107-allcards-3"></script>
-    <script src="/catalogo/assets/js/03-filters-search.js?v=20261106-multifiltros-1"></script>
-    <script src="/catalogo/assets/js/04-product-grid.js?v=20261107-allcards-3"></script>
+    <script src="/catalogo/assets/js/03-filters-search.js?v=20261107-banner20-auto5-v1"></script>
+    <script src="/catalogo/assets/js/04-product-grid.js?v=20261107-banner20-auto5-v1"></script>
     <script src="/catalogo/assets/js/05-product-modal.js?v=20261107-allcards-3"></script>
     <script src="/catalogo/assets/js/06-cart-favorites-state.js"></script>
     <script src="/catalogo/assets/js/07-cart.js"></script>
