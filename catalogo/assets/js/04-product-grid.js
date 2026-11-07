@@ -1,5 +1,20 @@
 /** CUPISSA | Grilla principal y destacados de temporada. */
 
+// Textos alternativos descriptivos para las imágenes de productos existentes y nuevos.
+// No modifica nombres, fotos ni registros de Supabase.
+function catalogPhotoAlt(prod) {
+    const name = String(prod?.nombre || 'Producto').trim();
+    const candidates = [prod?.subcategoria, prod?.categoria, prod?.mundo];
+    const category = candidates.map(value => String(value || '').trim())
+        .find(value => value && value.toLowerCase() !== 'general' && !name.toLowerCase().includes(value.toLowerCase()));
+    const categoryLabel = category ? (category === category.toUpperCase() ? category.charAt(0) + category.slice(1).toLowerCase() : category) : '';
+    return [name, categoryLabel, 'Cupissa'].filter(Boolean).join(' — ');
+}
+function escapeCatalogImageAttribute(value) {
+    return String(value).replace(/&/g, '&amp;').replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
 function catalogProductCard(prod, options = {}) {
     const isFav = favorites.some(f => String(f.id) === String(prod.id));
     const mainFoto = prod.fotos && prod.fotos.length > 0 ? prod.fotos[0] : 'https://via.placeholder.com/400x400?text=Cupissa';
@@ -8,6 +23,7 @@ function catalogProductCard(prod, options = {}) {
     const basePriceLabel = 'Desde';
     const card = document.createElement('div');
     const productPermalink = `/producto/${encodeURIComponent(String(prod.id))}/`;
+    const seoImageAlt = escapeCatalogImageAttribute(catalogPhotoAlt(prod));
     card.className = options.featured
         ? 'bg-white rounded-2xl overflow-hidden border border-pink-100 shadow-sm hover:shadow-md transition-all flex flex-col justify-between group cursor-pointer'
         : 'bg-white rounded-2xl sm:rounded-3xl overflow-hidden border border-slate-100 shadow-sm hover:shadow-md transition-all flex flex-col justify-between group cursor-pointer';
@@ -28,7 +44,7 @@ function catalogProductCard(prod, options = {}) {
     card.innerHTML = `
         <div>
             <div class="relative bg-slate-50 overflow-hidden flex items-center justify-center">
-                <img src="${mainFoto}" alt="${prod.nombre} - CUPISSA Colombia" title="${prod.nombre} - CUPISSA" loading="lazy" class="product-card-photo block w-full h-auto max-h-[380px] object-contain transition-transform duration-300">
+                <img src="${mainFoto}" alt="${seoImageAlt}" title="${seoImageAlt}" loading="lazy" class="product-card-photo block w-full h-auto max-h-[380px] object-contain transition-transform duration-300">
                 <button data-card-ignore-open type="button" onclick="toggleFavorite('${prod.id}', event)" class="absolute top-2 right-2 sm:top-3 sm:right-3 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white/80 backdrop-blur-md text-slate-400 hover:text-pink-600 flex items-center justify-center transition-colors shadow-sm" aria-label="Agregar a favoritos">
                     <i class="${isFav ? 'fa-solid fa-heart text-pink-600 text-xs sm:text-sm' : 'fa-regular fa-heart text-xs sm:text-sm'}"></i>
                 </button>
