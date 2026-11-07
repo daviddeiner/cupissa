@@ -2,6 +2,7 @@
 <html lang="es" class="h-full bg-slate-50">
 <head>
     <meta charset="UTF-8">
+    <meta name="robots" content="noindex,nofollow">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script>
         // El portal se integra dentro del catálogo únicamente en la versión celular.
@@ -10,7 +11,7 @@
             document.documentElement.classList.add('portal-embedded');
         }
     </script>
-    <title>CUPISSA - Portal de Pagos</title>
+    <title>Portal de pagos</title>
     
     <link rel="shortcut icon" href="/catalogo/assets/images/favicon.png" type="image/png">
     <link rel="icon" href="/catalogo/assets/images/logo.png" type="image/x-icon">
@@ -46,7 +47,7 @@
             <i id="toast-icon" class="fa-solid fa-circle-check"></i>
         </div>
         <div>
-            <h4 id="toast-title" class="text-xs font-bold uppercase tracking-wider text-slate-900">Notificación de Pago</h4>
+            <h4 id="toast-title" class="text-xs font-bold uppercase tracking-wider text-slate-900">Notificación de pago</h4>
             <p id="toast-message" class="text-xs text-slate-600 font-medium mt-0.5">Tu pago ha sido procesado con éxito</p>
         </div>
     </div>
@@ -62,7 +63,7 @@
                 <div>
                     <a href="/catalogo/" class="portal-catalog-link px-4 py-2.5 bg-pink-50 hover:bg-pink-100 fuchsia-text rounded-2xl text-xs font-black transition-colors flex items-center space-x-2 shadow-sm">
                         <i class="fa-solid fa-store"></i>
-                        <span>Ver Catálogo</span>
+                        <span>Ver catálogo</span>
                     </a>
                 </div>
             </div>
@@ -74,7 +75,7 @@
         <!-- Acceso unificado: el Portal solo consulta la sesión iniciada desde Perfil. -->
         <section id="client-login-card" class="cupissa-portal-access-card" aria-live="polite">
           <div class="cupissa-portal-access-icon"><i class="fa-solid fa-lock"></i></div>
-          <p class="cupissa-portal-access-kicker">MI PORTAL CUPISSA</p>
+          <p class="cupissa-portal-access-kicker">Mi portal</p>
           <h2>Tu información, en un solo lugar</h2>
           <p>Inicia sesión desde <strong>Perfil</strong> para consultar aquí tus créditos, cuotas y pagos de forma segura.</p>
           <button type="button" id="cupissa-portal-open-profile" class="cupissa-portal-profile-action"><i class="fa-regular fa-user"></i> Ir a Perfil</button>
