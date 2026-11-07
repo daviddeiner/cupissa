@@ -39,7 +39,8 @@ def public_config(root):
 
 def get_public_products(root):
     url, key = public_config(root)
-    fields = 'id,nombre,descripcion,precio_detal,precio_alquiler,venta,alquiler,fotos,oculto'
+    fields = ('id,nombre,descripcion,precio_detal,precio_alquiler,venta,alquiler,fotos,oculto,'
+              'mundo,mundos,categoria,categorias,subcategoria,subcategorias,temporada,temporadas,personalizable')
     batch = 500
     products = []
     while True:
@@ -117,63 +118,173 @@ def product_price(p):
         return None, 'Consultar'
 
 
+def clean_text(value):
+    '''Texto legible para metadatos; la ficha comercial en Supabase no se modifica.'''
+    raw = html.unescape(str(value or ''))
+    raw = re.sub(r'<[^>]*>', ' ', raw)
+    return re.sub(r'\s+', ' ', raw).strip()
+
+
+def first_classification(product, plural, singular):
+    '''Lee indistintamente datos de productos antiguos y nuevos.'''
+    values = product.get(plural) or product.get(singular) or ''
+    if isinstance(values, str) and values.strip().startswith('['):
+        try:
+            parsed = json.loads(values)
+            if isinstance(parsed, list):
+                values = parsed
+        except ValueError:
+            pass
+    if not isinstance(values, list):
+        values = [values]
+    for item in values:
+        value = clean_text(item)
+        if value and value.casefold() not in ('general', 'todos', 'todas', 'otros', 'sin categoria'):
+            return value.capitalize() if value.isupper() else value
+    return ''
+
+
+def product_classification(product):
+    return [x for x in (
+        first_classification(product, 'mundos', 'mundo'),
+        first_classification(product, 'categorias', 'categoria'),
+        first_classification(product, 'subcategorias', 'subcategoria'),
+    ) if x]
+
+
+def product_name(product):
+    return clean_text(product.get('nombre')) or 'Producto Cupissa'
+
+
+def truncate_words(value, max_chars):
+    value = clean_text(value)
+    if len(value) <= max_chars:
+        return value
+    clipped = value[:max_chars + 1].rsplit(' ', 1)[0].rstrip(' ,;:-')
+    return (clipped if len(clipped) >= max_chars // 2 else value[:max_chars].rstrip()) + '…'
+
+
+def seo_title(product):
+    '''Nombre real + contexto de Supabase; no agrega atributos inventados.'''
+    name = product_name(product)
+    category = product_classification(product)
+    suffix = next((c for c in reversed(category) if c.casefold() not in name.casefold()), '')
+    enriched = f'{name} | {suffix} | Cupissa' if suffix else f'{name} | Cupissa'
+    return truncate_words(enriched if len(enriched) <= 88 else f'{name} | Cupissa', 110)
+
+
+def seo_description(product, limit=500):
+    name = product_name(product)
+    original = clean_text(product.get('descripcion'))
+    classification = product_classification(product)
+    phrases = [original if original else f'{name} en Cupissa.']
+    context = ' / '.join(classification)
+    if context and not all(c.casefold() in original.casefold() for c in classification):
+        phrases.append(f'Categoría: {context}.')
+    if product.get('personalizable') is True and 'personaliz' not in original.casefold():
+        phrases.append('Producto personalizable.')
+    if 'colombia' not in original.casefold():
+        phrases.append('Envíos a toda Colombia.')
+    result = ' '.join(phrases)
+    return truncate_words(result, limit)
+
+
+def seo_image_alt(product, number=1):
+    name = product_name(product)
+    # "Foto 2" no presupone el ángulo, el material ni el color de la imagen.
+    context = next((x for x in reversed(product_classification(product)) if x.casefold() not in name.casefold()), '')
+    alt = f'{name} — {context}' if context else name
+    if number > 1:
+        alt += f' — foto {number}'
+    return truncate_words(alt + ' | Cupissa', 190)
+
+
 def product_html(p):
     identifier = safe_id(p['id'])
-    title = str(p.get('nombre') or 'Producto').strip()[:240]
-    description = str(p.get('descripcion') or f'{title}. Descúbrelo en Cupissa, productos para toda Colombia.').strip()[:900]
+    title = product_name(p)
+    description = clean_text(p.get('descripcion')) or f'{title}. Encuéntralo en Cupissa.'
+    title_meta = seo_title(p)
+    meta_description = seo_description(p, limit=158)
+    long_description = seo_description(p, limit=950)
     images = image_urls(p.get('fotos'))
     image = images[0] if images else DOMAIN + '/catalogo/assets/images/logo.png'
+    img_alt = seo_image_alt(p) if images else 'Logo de Cupissa'
     url = f'{DOMAIN}/producto/{quote(identifier)}/'
     catalog = f'{DOMAIN}/catalogo/?producto={quote(identifier)}'
     price, price_label = product_price(p)
-    meta_description = description[:260]
+    category = product_classification(p)
     schema = {
         '@context': 'https://schema.org', '@type': 'Product',
-        'name': title, 'description': description,
-        'image': images or [image], 'sku': identifier,
-        'url': url, 'brand': {'@type': 'Brand', 'name': 'Cupissa'},
+        '@id': url + '#producto', 'name': title, 'description': long_description,
+        'sku': identifier, 'url': url,
+        'brand': {'@type': 'Brand', 'name': 'Cupissa'},
     }
+    if images:
+        schema['image'] = images[:10]
+    if category:
+        schema['category'] = ' > '.join(category)
     if price is not None:
         schema['offers'] = {'@type': 'Offer', 'url': url, 'price': price,
-                            'priceCurrency': 'COP', 'availability': 'https://schema.org/InStock',
-                            'itemCondition': 'https://schema.org/NewCondition'}
-    json_ld = json.dumps(schema, ensure_ascii=False).replace('<', '\\u003c').replace('>', '\\u003e').replace('&', '\\u0026')
+                            'priceCurrency': 'COP', 'seller': {'@type': 'Organization', 'name': 'Cupissa'}}
+    # BreadcrumbList describe la jerarquía existente sin inventar páginas de categorías.
+    breadcrumbs = {
+        '@context': 'https://schema.org', '@type': 'BreadcrumbList',
+        'itemListElement': [
+            {'@type': 'ListItem', 'position': 1, 'name': 'Catálogo Cupissa', 'item': DOMAIN + '/catalogo/'},
+            {'@type': 'ListItem', 'position': 2, 'name': title, 'item': url}
+        ]
+    }
+    def jsonld(obj):
+        return json.dumps(obj, ensure_ascii=False).replace('<', '\\u003c').replace('>', '\\u003e').replace('&', '\\u0026')
     price_meta = (f'<meta property="product:price:amount" content="{price:.0f}">\n'
-                  '<meta property="product:price:currency" content="COP">\n'
-                  '<meta property="product:availability" content="instock">') if price is not None else ''
-    gallery = '\n'.join(f'<img src="{escape(src)}" alt="{escape(title)} — imagen {idx}" loading="lazy" width="520" height="520">'
-                        for idx, src in enumerate(images[1:9], start=2))
+                  '<meta property="product:price:currency" content="COP">') if price is not None else ''
+    gallery = '\n'.join(
+        f'<img src="{escape(src)}" alt="{escape(seo_image_alt(p, idx))}" title="{escape(title)} — foto {idx}" '
+        f'loading="lazy" decoding="async" width="520" height="520">'
+        for idx, src in enumerate(images[1:11], start=2))
     gallery = f'<div class="gallery">{gallery}</div>' if gallery else ''
+    classification = ('<p class="category">' + escape(' › '.join(category)) + '</p>') if category else ''
+    og_extra_images = '\n'.join(f'<meta property="og:image" content="{escape(src)}">' for src in images[1:5])
     return f'''<!doctype html>
 <html lang="es">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>{escape(title)} | Cupissa</title>
+<title>{escape(title_meta)}</title>
 <meta name="description" content="{escape(meta_description)}">
 <meta name="robots" content="index,follow,max-image-preview:large">
 <link rel="canonical" href="{escape(url)}">
 <link rel="icon" href="/catalogo/assets/images/favicon.png" type="image/png">
 <meta property="og:type" content="product">
+<meta property="og:locale" content="es_CO">
 <meta property="og:site_name" content="Cupissa">
-<meta property="og:title" content="{escape(title)}">
+<meta property="og:title" content="{escape(title_meta)}">
 <meta property="og:description" content="{escape(meta_description)}">
 <meta property="og:url" content="{escape(url)}">
 <meta property="og:image" content="{escape(image)}">
+<meta property="og:image:alt" content="{escape(img_alt)}">
+{og_extra_images}
 <meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="{escape(title_meta)}">
+<meta name="twitter:description" content="{escape(meta_description)}">
 <meta name="twitter:image" content="{escape(image)}">
+<meta name="twitter:image:alt" content="{escape(img_alt)}">
+<meta name="pin:description" content="{escape(long_description)}">
+<meta name="pin:media" content="{escape(image)}">
 {price_meta}
-<script type="application/ld+json">{json_ld}</script>
+<script type="application/ld+json">{jsonld(schema)}</script>
+<script type="application/ld+json">{jsonld(breadcrumbs)}</script>
 <style>
 :root{{font-family:Inter,ui-sans-serif,system-ui,Arial,sans-serif;color:#22212a;background:#f8f8fa}}
-*{{box-sizing:border-box}}body{{margin:0}}a{{color:inherit}}header{{background:white;border-bottom:1px solid #eee}}.head{{max-width:1120px;margin:auto;padding:16px 20px;display:flex;justify-content:space-between;align-items:center;gap:20px}}.logo{{height:40px;width:auto;max-width:185px;object-fit:contain}}.back{{font-size:14px;font-weight:700;color:#a91362;text-decoration:none}}main{{max-width:1120px;margin:35px auto 60px;padding:0 18px}}.crumb{{font-size:13px;color:#71717a;margin-bottom:24px}}.layout{{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:38px;align-items:start}}.photo{{border-radius:22px;overflow:hidden;background:white;border:1px solid #eee;min-height:260px;display:grid;place-items:center}}.photo img{{display:block;width:100%;height:auto;max-height:660px;object-fit:contain}}.gallery{{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:14px}}.gallery img{{display:block;width:100%;aspect-ratio:1;object-fit:cover;border-radius:12px;border:1px solid #eee;background:white}}.info{{padding:9px 0}}.eyebrow{{font-size:12px;font-weight:800;color:#be185d;letter-spacing:.05em}}h1{{font-size:clamp(25px,3vw,40px);letter-spacing:-.035em;line-height:1.17;margin:12px 0 22px}}.price{{font-weight:850;font-size:30px;color:#14121a;margin:0 0 22px}}.price small{{display:block;color:#76717a;font-size:13px;font-weight:600;margin-bottom:4px}}.desc{{white-space:pre-wrap;line-height:1.8;color:#4b5563;margin:22px 0 30px;overflow-wrap:anywhere}}.button{{display:inline-flex;justify-content:center;text-align:center;align-items:center;padding:16px 28px;background:#d61c73;color:white;border-radius:14px;font-size:15px;font-weight:800;text-decoration:none;min-height:54px}}.button:hover{{background:#ac135a}}.note{{font-size:13px;color:#76717a;margin-top:19px}}footer{{border-top:1px solid #e7e7eb;text-align:center;padding:24px;color:#67616b;font-size:12px}}@media(max-width:740px){{.layout{{grid-template-columns:1fr;gap:20px}}.head{{padding:13px 16px}}.logo{{height:34px}}main{{margin:24px auto 38px}}.info{{padding:0}}.gallery{{gap:7px}}.photo{{min-height:170px}}}}
+*{{box-sizing:border-box}}body{{margin:0}}a{{color:inherit}}header{{background:white;border-bottom:1px solid #eee}}.head{{max-width:1120px;margin:auto;padding:16px 20px;display:flex;justify-content:space-between;align-items:center;gap:20px}}.logo{{height:40px;width:auto;max-width:185px;object-fit:contain}}.back{{font-size:14px;font-weight:700;color:#a91362;text-decoration:none}}main{{max-width:1120px;margin:35px auto 60px;padding:0 18px}}.crumb{{font-size:13px;color:#71717a;margin-bottom:24px}}.layout{{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:38px;align-items:start}}.photo{{border-radius:22px;overflow:hidden;background:white;border:1px solid #eee;min-height:260px;display:grid;place-items:center}}.photo img{{display:block;width:100%;height:auto;max-height:660px;object-fit:contain}}.gallery{{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:14px}}.gallery img{{display:block;width:100%;aspect-ratio:1;object-fit:cover;border-radius:12px;border:1px solid #eee;background:white}}.info{{padding:9px 0}}.eyebrow{{font-size:12px;font-weight:800;color:#be185d;letter-spacing:.05em}}h1{{font-size:clamp(25px,3vw,40px);letter-spacing:-.035em;line-height:1.17;margin:12px 0 22px}}.price{{font-weight:850;font-size:30px;color:#14121a;margin:0 0 22px}}.price small{{display:block;color:#76717a;font-size:13px;font-weight:600;margin-bottom:4px}}.desc{{white-space:pre-wrap;line-height:1.8;color:#4b5563;margin:22px 0 30px;overflow-wrap:anywhere}}.category{{color:#555;font-size:14px;margin:8px 0}}.button{{display:inline-flex;justify-content:center;text-align:center;align-items:center;padding:16px 28px;background:#d61c73;color:white;border-radius:14px;font-size:15px;font-weight:800;text-decoration:none;min-height:54px}}.button:hover{{background:#ac135a}}.note{{font-size:13px;color:#76717a;margin-top:19px}}footer{{border-top:1px solid #e7e7eb;text-align:center;padding:24px;color:#67616b;font-size:12px}}@media(max-width:740px){{.layout{{grid-template-columns:1fr;gap:20px}}.head{{padding:13px 16px}}.logo{{height:34px}}main{{margin:24px auto 38px}}.info{{padding:0}}.gallery{{gap:7px}}.photo{{min-height:170px}}}}
 </style>
 </head>
 <body>
 <header><div class="head"><a href="/catalogo/"><img class="logo" src="/catalogo/assets/images/logo.png" alt="Cupissa"></a><a class="back" href="/catalogo/">Volver al catálogo</a></div></header>
 <main><div class="crumb"><a href="/catalogo/">Cupissa</a> / {escape(title)}</div>
 <article class="layout" itemscope itemtype="https://schema.org/Product">
-<div><div class="photo"><img src="{escape(image)}" alt="{escape(title)} — Cupissa" width="720" height="720" fetchpriority="high" itemprop="image"></div>{gallery}</div>
+<div><div class="photo"><img src="{escape(image)}" alt="{escape(img_alt)}" title="{escape(title)} — Cupissa" width="720" height="720" fetchpriority="high" itemprop="image"></div>{gallery}</div>
 <div class="info"><span class="eyebrow">Cupissa</span><h1 itemprop="name">{escape(title)}</h1>
+{classification}
 <div class="price"><small>{escape(price_label)}</small>{escape(money(price))}</div>
 <div class="desc" itemprop="description">{escape(description)}</div>
 <a class="button" href="{escape(catalog)}">Elegir opciones y comprar</a>
@@ -207,11 +318,11 @@ def write_sitemaps(root, products):
 
 
 def write_pinterest_feed(root, products):
-    # Fuente compatible con el formato estándar de catálogos de Pinterest.
-    # Se conecta por separado a Pinterest Business si la cuenta es elegible.
+    '''Feed con clasificación, fotos adicionales y alt accesible desde Supabase.'''
+    columns = ('id', 'title', 'description', 'link', 'image_link', 'price', 'availability',
+               'brand', 'product_type', 'additional_image_link', 'alt_text')
     with (root / 'pinterest-feed.csv').open('w', encoding='utf-8', newline='') as f:
-        writer = csv.DictWriter(f, fieldnames=('id', 'title', 'description', 'link',
-                                               'image_link', 'price', 'availability', 'brand'))
+        writer = csv.DictWriter(f, fieldnames=columns)
         writer.writeheader()
         for p in products:
             images = image_urls(p.get('fotos'))
@@ -219,15 +330,16 @@ def write_pinterest_feed(root, products):
             ident = safe_id(p.get('id'))
             if not ident or not images or amount is None or amount <= 0:
                 continue
-            name = str(p.get('nombre') or '').strip()
-            if not name:
-                continue
-            desc = str(p.get('descripcion') or f'{name}. Producto de Cupissa.').strip()
+            name = product_name(p)
             writer.writerow({
-                'id': ident, 'title': name[:500], 'description': desc[:10000],
+                'id': ident, 'title': name[:500],
+                'description': seo_description(p, limit=2000),
                 'link': f'{DOMAIN}/producto/{quote(ident)}/',
                 'image_link': images[0], 'price': f'{amount:.2f} COP',
-                'availability': 'in stock', 'brand': 'Cupissa'
+                'availability': 'in stock', 'brand': 'Cupissa',
+                'product_type': ' > '.join(product_classification(p)),
+                'additional_image_link': ', '.join(images[1:11]),
+                'alt_text': seo_image_alt(p).replace(',', ' '),
             })
 
 
