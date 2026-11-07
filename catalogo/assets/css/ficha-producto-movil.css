@@ -76,3 +76,21 @@ body.cupissa-web-product #wrapper-tallas .app-variant-choices{display:none!impor
 body.cupissa-web-product #wrapper-tallas .cupissa-select-control{display:block!important;position:relative!important;width:100%!important;}
 body.cupissa-web-product #wrapper-tallas .cupissa-select-control #opt-select-talla{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip-path:inset(50%)!important;opacity:0!important;pointer-events:none!important;}
 body.cupissa-web-product #wrapper-tallas .cupissa-select-trigger{display:flex!important;}
+
+
+/* Colores por dispositivo: en móvil solo tarjetas con la imagen de la variante.
+   La selección real continúa en el <select> original, para carrito y precios. */
+@media (max-width: 767px) {
+  body.cupissa-web-product #wrapper-colores.app-has-variant-chips > .cupissa-select-control {
+    display: none !important;
+  }
+  body.cupissa-web-product #wrapper-colores.app-has-variant-chips > .app-variant-choices {
+    display: flex !important;
+  }
+}
+/* Escritorio: solo el desplegable; evita duplicados al ampliar la ventana. */
+@media (min-width: 768px) {
+  #wrapper-colores .app-variant-choices {
+    display: none !important;
+  }
+}
