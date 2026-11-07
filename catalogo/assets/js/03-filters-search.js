@@ -26,7 +26,7 @@ function renderFilters() {
                 btn.onclick = () => filterByMundo(mundo);
                 btn.id = `btn-mundo-${mundo}`;
                 btn.className = "px-2.5 py-1 sm:px-4 sm:py-2 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-600 bg-slate-100 hover:bg-slate-200 transition-all shrink-0 flex items-center space-x-1 sm:space-x-1.5";
-                btn.innerHTML = `<i class="fa-solid fa-folder text-[9px] sm:text-[10px] text-pink-500"></i><span>Mundo ${mundo}</span>`;
+                btn.innerHTML = `<i class="fa-solid fa-folder text-[9px] sm:text-[10px] text-pink-500"></i><span>${mundo}</span>`;
                 mundosContainer.appendChild(btn);
             });
 
