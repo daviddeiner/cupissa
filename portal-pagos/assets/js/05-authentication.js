@@ -130,8 +130,8 @@ async function handleLogout() {
     try { await window.CUPISSAAuth.signOut(); } catch (error) { console.warn(error); }
     document.getElementById('client-dashboard').classList.add('hidden');
     document.getElementById('client-login-card').classList.remove('hidden');
-    document.getElementById('client-login-form').reset();
-    backToClientEmailLogin();
+    document.getElementById('client-login-form')?.reset();
+    // El acceso se gestiona únicamente desde Perfil.
 }
 
 // Continuación de Google en navegación principal (nunca dentro del iframe).
