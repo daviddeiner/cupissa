@@ -611,6 +611,16 @@
       return false;
     }
 
+    // El Google anterior ya no puede recuperar una cuenta cuyo correo cambió.
+    if (typeof AUTH().verifyGoogleEmailIsCurrent === 'function' &&
+        !(await AUTH().verifyGoogleEmailIsCurrent())) {
+      AUTH().clearGoogleIntent();
+      showAuth();
+      showAuthMode('register');
+      showMessage('profile-register-error', 'La dirección anterior de Google ya no pertenece a esa cuenta CUPISSA. Para utilizarla nuevamente, crea una cuenta nueva.');
+      return true;
+    }
+
     const linked = await AUTH().getLinkedAccount();
 
     // Google OAuth ya verificó la titularidad del correo; nunca solicitar segundo OTP.
