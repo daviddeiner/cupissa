@@ -126,6 +126,17 @@ function renderFilters() {
             if (window.cupissaSearchTimer) window.clearTimeout(window.cupissaSearchTimer);
             window.cupissaSearchTimer = window.setTimeout(() => {
                 applyFiltersAndSearch();
+                // Al buscar, presentar inmediatamente el inicio de los resultados.
+                // No quitar el foco del campo ni alterar filtros, productos o paginación.
+                window.requestAnimationFrame(() => {
+                    const catalog = document.getElementById('catalog-main');
+                    if (!catalog) return;
+                    const header = document.querySelector('header');
+                    const headerHeight = header && getComputedStyle(header).position === 'sticky'
+                        ? header.getBoundingClientRect().height : 0;
+                    const top = Math.max(0, window.scrollY + catalog.getBoundingClientRect().top - headerHeight - 8);
+                    window.scrollTo({ top, behavior: 'instant' });
+                });
             }, 90);
         }
 
