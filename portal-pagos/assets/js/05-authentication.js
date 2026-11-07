@@ -113,7 +113,7 @@ async function handleClientGoogleLogin() {
 async function showClientDashboard(client) {
     currentClient = client;
     localStorage.setItem('cupissa_client_session', JSON.stringify(client));
-    document.getElementById('login-error').classList.add('hidden');
+    document.getElementById('login-error')?.classList.add('hidden');
     document.getElementById('client-login-card').classList.add('hidden');
     document.getElementById('client-dashboard').classList.remove('hidden');
     await loadClientDashboard();
