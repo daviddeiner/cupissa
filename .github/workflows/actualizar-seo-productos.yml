@@ -1,0 +1,51 @@
+name: Actualizar fichas y sitemap de productos
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17,47 * * * *'
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/generar_fichas_seo.py'
+      - 'shared/js/supabase-config.js'
+      - '.github/workflows/actualizar-seo-productos.yml'
+
+permissions:
+  contents: write
+  pages: write
+
+concurrency:
+  group: cupissa-product-seo
+  cancel-in-progress: false
+
+jobs:
+  generar:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar proyecto
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - name: Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Crear o retirar fichas según Supabase
+        run: python scripts/generar_fichas_seo.py
+      - name: Publicar las nuevas fichas en la misma rama
+        id: guardar
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A -- producto/ sitemap.xml sitemaps.xml pinterest-feed.csv
+          if ! git diff --cached --quiet; then
+            git commit -m 'Actualizar fichas publicas e indice SEO'
+            git push
+            echo 'changes=true' >> "$GITHUB_OUTPUT"
+          fi
+      - name: Solicitar la actualización de GitHub Pages con la configuración actual
+        if: steps.guardar.outputs.changes == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api --method POST "repos/${GITHUB_REPOSITORY}/pages/builds"
