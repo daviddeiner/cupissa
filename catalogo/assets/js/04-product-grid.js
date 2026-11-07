@@ -10,6 +10,7 @@ function catalogProductCard(prod, options = {}) {
     card.className = options.featured
         ? 'bg-white rounded-2xl overflow-hidden border border-pink-100 shadow-sm hover:shadow-md transition-all flex flex-col justify-between group cursor-pointer'
         : 'bg-white rounded-2xl sm:rounded-3xl overflow-hidden border border-slate-100 shadow-sm hover:shadow-md transition-all flex flex-col justify-between group cursor-pointer';
+    card.dataset.cupissaProductId = String(prod.id);
     card.tabIndex = 0;
     card.setAttribute('role', 'button');
     card.setAttribute('aria-label', `Ver opciones de ${prod.nombre}`);
@@ -76,12 +77,39 @@ function renderSeasonFeatured() {
     section.classList.remove('hidden');
     if (name) name.textContent = featuredSeasonName ? `· ${featuredSeasonName}` : '';
     grid.innerHTML = '';
-    featuredSeasonProducts.forEach(product => grid.appendChild(catalogProductCard(product, { featured:true })));
+    // No volver a construir destacados cuando llega otro lote del catálogo.
+    const featuredKey = featuredSeasonProducts.map(product => String(product.id)).join('|');
+    if (grid.dataset.featuredKey !== featuredKey || grid.children.length !== featuredSeasonProducts.length) {
+        grid.replaceChildren();
+        featuredSeasonProducts.forEach(product => grid.appendChild(catalogProductCard(product, { featured:true })));
+        grid.dataset.featuredKey = featuredKey;
+    }
 }
 
 function renderProductsGrid() {
     const grid = document.getElementById('products-grid');
-    grid.innerHTML = '';
+    // Conservar tarjetas ya dibujadas durante la carga progresiva: no reordenar al hacer scroll.
+    const mobileMosaic = window.matchMedia('(max-width: 767px)').matches;
+    const catalogKey = filteredProducts.map(p => String(p.id)).join('|');
+    const sameCatalog = grid.dataset.catalogKey === catalogKey
+        && grid.dataset.mobileMosaic === String(mobileMosaic);
+    if (!sameCatalog) {
+        grid.replaceChildren();
+        grid.dataset.catalogKey = catalogKey;
+        grid.dataset.mobileMosaic = String(mobileMosaic);
+        grid.dataset.renderedCount = '0';
+    }
+    let columns = null;
+    if (mobileMosaic) {
+        columns = Array.from(grid.querySelectorAll(':scope > .cupissa-mosaic-column'));
+        if (columns.length !== 2) {
+            grid.replaceChildren();
+            columns = [document.createElement('div'), document.createElement('div')];
+            columns.forEach(col => { col.className = 'cupissa-mosaic-column'; grid.appendChild(col); });
+            grid.dataset.renderedCount = '0';
+        }
+    }
+
     const statusContainer = document.getElementById('scroll-status-container');
     const loadingMsg = document.getElementById('scroll-loading-msg');
     const endMsg = document.getElementById('scroll-end-msg');
@@ -114,7 +142,9 @@ function renderProductsGrid() {
     const productsToShow = filteredProducts.slice(0, displayLimit);
     const query = searchValue;
 
-    productsToShow.forEach((prod, index) => {
+    const alreadyRendered = Math.min(Number(grid.dataset.renderedCount || 0), productsToShow.length);
+    productsToShow.slice(alreadyRendered).forEach((prod, offset) => {
+        const index = alreadyRendered + offset;
         if (query && currentNonMatches.length > 0 && index === currentMatches.length) {
             const separator = document.createElement('div');
             separator.className = 'col-span-full my-4 flex items-center justify-center';
@@ -122,10 +152,13 @@ function renderProductsGrid() {
                 <div class="flex-grow border-t border-slate-300"></div>
                 <span class="flex-shrink mx-4 text-xs font-bold uppercase tracking-wider text-slate-500 bg-slate-100 px-4 py-1.5 rounded-full shadow-xs">Más productos del catálogo</span>
                 <div class="flex-grow border-t border-slate-300"></div>`;
-            grid.appendChild(separator);
+            if (columns) { columns[index % 2].appendChild(separator); } else grid.appendChild(separator);
         }
-        grid.appendChild(catalogProductCard(prod));
+        const card = catalogProductCard(prod);
+        if (columns) columns[index % 2].appendChild(card);
+        else grid.appendChild(card);
     });
+    grid.dataset.renderedCount = String(productsToShow.length);
 
     if (typeof window.loadProductActivityMetrics === 'function') {
         const activityProducts = hasActiveFilters
