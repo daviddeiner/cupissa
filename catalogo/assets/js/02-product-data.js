@@ -33,6 +33,10 @@ function shuffleArray(array) {
             renderFilters();
             applyFiltersAndSearch();
             updateSEOStructuredData();
+            const productFromLink = new URLSearchParams(window.location.search).get('producto');
+            if (productFromLink && rawProducts.some(product => String(product.id) === productFromLink)) {
+                openOptionsModal(productFromLink);
+            }
         }
 
         async function loadConfiguredFeaturedSeason() {
@@ -190,23 +194,21 @@ function shuffleArray(array) {
         function updateSEOStructuredData() {
             if (!rawProducts || rawProducts.length === 0) return;
             
-            const schemaData = rawProducts.slice(0, 30).map(p => ({
-                "@context": "https://schema.org/",
-                "@type": "Product",
-                "name": p.nombre,
-                "image": p.fotos,
-                "description": p.descripcion || `${p.nombre} - Producto CUPISSA Colombia`,
-                "brand": {
-                    "@type": "Brand",
-                    "name": "CUPISSA"
-                },
-                "offers": {
-                    "@type": "Offer",
-                    "priceCurrency": "COP",
-                    "price": p.precio_detal,
-                    "availability": "https://schema.org/InStock"
+            const schemaData = {
+                '@context': 'https://schema.org',
+                '@type': 'CollectionPage',
+                name: 'Cupissa',
+                url: 'https://cupissa.com/catalogo/',
+                mainEntity: {
+                    '@type': 'ItemList',
+                    itemListElement: rawProducts.map((p, index) => ({
+                        '@type': 'ListItem',
+                        position: index + 1,
+                        name: p.nombre,
+                        url: `https://cupissa.com/producto/${encodeURIComponent(String(p.id))}/`
+                    }))
                 }
-            }));
+            };
 
             const scriptElem = document.getElementById('seo-schema-script');
             if (scriptElem) {
