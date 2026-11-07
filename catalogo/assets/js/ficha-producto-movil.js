@@ -18,7 +18,7 @@ const thumbs=document.getElementById('opt-modal-thumbs');
 const img=document.getElementById('opt-modal-img');
 function updateCount(){const len=window.selectedProductModal?.fotos?.length||thumbs?.querySelectorAll('img').length||0;const active=Math.max(0,[...thumbs?.querySelectorAll('img')||[]].findIndex(node=>node.classList.contains('fuchsia-border')));if(count){count.textContent=len>1?`${Math.min(len,active+1)}/${len}`:'';count.hidden=len<2}}
 function variantChips(kind){
-  if(kind==='size')return;
+  if(kind==='size')return; // Mantener solamente el selector original de tallas.
   const wrapper=document.getElementById(kind==='size'?'wrapper-tallas':'wrapper-colores');
   const select=document.getElementById(kind==='size'?'opt-select-talla':'opt-select-color');
   if(!wrapper||!select)return;
