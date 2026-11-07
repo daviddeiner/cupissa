@@ -427,6 +427,10 @@
     const token = validateOtp(code);
     const { data, error } = await db.auth.verifyOtp({ email: correo, token, type: 'email' });
     if (error) throwFriendly(error);
+    if (data?.user && cleanEmail(data.user.email) !== correo) {
+      await db.auth.signOut();
+      throw new Error('Este correo ya no corresponde a la cuenta. Utiliza el correo actualizado.');
+    }
     return data;
   }
 
@@ -695,6 +699,49 @@
     return data;
   }
 
+  // Al cambiar el correo, una identidad Google con la dirección anterior
+  // no debe seguir ligada a la misma ficha de cliente.
+  async function unlinkOutdatedGoogleIdentities(currentEmail) {
+    const { data, error } = await db.auth.getUserIdentities();
+    if (error) throwFriendly(error);
+    let identities = data?.identities || [];
+    for (const identity of identities.filter(i => i.provider === 'google')) {
+      const identityEmail = cleanEmail(identity.identity_data?.email || identity.email);
+      if (!identityEmail || identityEmail === cleanEmail(currentEmail)) continue;
+      if (identities.length < 2) {
+        throw new Error('El correo se actualizó, pero falta desvincular el acceso anterior de Google. Contacta al equipo CUPISSA para completar la desvinculación.');
+      }
+      const removal = await db.auth.unlinkIdentity(identity);
+      if (removal.error) throwFriendly(removal.error);
+      identities = identities.filter(i => i.id !== identity.id);
+    }
+    return true;
+  }
+
+  // Se llama únicamente después de volver de Google. Si Google pertenece a
+  // un correo anterior, se cierra la sesión antes de cargar datos del cliente.
+  async function verifyGoogleEmailIsCurrent() {
+    const { data, error } = await db.auth.getUser();
+    if (error) throwFriendly(error);
+    const current = data?.user;
+    if (!current) return false;
+    const email = cleanEmail(current.email);
+    const { data: identitiesData, error: identitiesError } = await db.auth.getUserIdentities();
+    if (identitiesError) throwFriendly(identitiesError);
+    const identities = identitiesData?.identities || [];
+    const googleIds = identities.filter(i => i.provider === 'google');
+    // Solo se invoca tras un retorno OAuth explícito.
+    const stale = googleIds.filter(i => {
+      const address = cleanEmail(i.identity_data?.email || i.email);
+      return address && email && address !== email;
+    });
+    if (!stale.length) return true;
+    try { await unlinkOutdatedGoogleIdentities(email); }
+    catch (e) { console.warn('[CUPISSA] Google anterior pendiente de desvincular',e); }
+    await db.auth.signOut();
+    return false;
+  }
+
   async function verifyEmailChangeOtp(email, code) {
     const correo = validateEmail(email);
     const token = validateOtp(code);
@@ -728,6 +775,7 @@
       console.error('[CUPISSA AUTH] Sincronización de correo:', sync.error || sync.data);
       throw new Error('El correo ya cambió en Authentication, pero falta sincronizar las fichas de CUPISSA. Solicita al equipo que revise la sincronización antes de continuar.');
     }
+    await unlinkOutdatedGoogleIdentities(correo);
     return { user: current.user, email: correo };
   }
 
@@ -782,6 +830,7 @@
 
     sendEmailChangeOtp,
     verifyEmailChangeOtp,
+    verifyGoogleEmailIsCurrent,
 
     signOut,
 
