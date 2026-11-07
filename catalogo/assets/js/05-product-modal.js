@@ -36,6 +36,8 @@ function openOptionsModal(prodId) {
             if (!prod) return;
 
             selectedProductModal = prod;
+            const permalink = document.getElementById('cupissa-product-permalink');
+            if (permalink) permalink.href = `/producto/${encodeURIComponent(String(prod.id))}/`;
             selectedQtyModal = 1;
             activePhotoIndex = 0;
 
