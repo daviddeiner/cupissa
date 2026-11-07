@@ -427,6 +427,12 @@
     }
 
     setSession(client);
+    // Avisar al Portal que Perfil ya validó y vinculó una cuenta.
+    try {
+      if (window.parent !== window) {
+        window.parent.postMessage({ type: 'CUPISSA_PROFILE_AUTH_CHANGED' }, location.origin);
+      }
+    } catch (_) {}
     renderProfile();
     showAccount();
 
