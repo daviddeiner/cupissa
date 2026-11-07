@@ -1151,3 +1151,18 @@ body.profile-open #mobile-app-nav { display: flex !important; z-index: 9999; pos
   #products-grid > .cupissa-mosaic-column { display:flex!important; flex:1 1 0!important; min-width:0!important; flex-direction:column!important; gap:10px!important; }
   #products-grid > .cupissa-mosaic-column > * { display:flex!important; flex-direction:column!important; width:100%!important; max-width:100%!important; margin:0!important; min-height:0!important; height:auto!important; }
 }
+
+
+/* CUPISSA | Aviso de cobertura nacional, conservando el banner original. */
+.catalog-shipping-note {display:block;margin-top:4px;font-size:.95em;font-weight:850;line-height:1.35;letter-spacing:.01em;}
+
+/* El botón de instalación permanece en el código, pero no se muestra temporalmente. */
+#install-app-button {display:none !important;}
+
+/* Solo escritorio: tarjetas de igual altura; el mosaico móvil sigue siendo natural. */
+@media (min-width:768px) {
+  #products-grid, #season-featured-grid {align-items:stretch !important;align-content:normal !important;}
+  #products-grid > [data-cupissa-product-id], #season-featured-grid > [data-cupissa-product-id] {height:100% !important;min-height:0 !important;align-self:stretch !important;justify-content:space-between !important;}
+  #products-grid > [data-cupissa-product-id] > div:last-child, #season-featured-grid > [data-cupissa-product-id] > div:last-child {margin-top:auto !important;}
+  #products-grid .product-card-photo, #season-featured-grid .product-card-photo {height:275px !important;max-height:275px !important;aspect-ratio:auto !important;object-fit:contain !important;}
+}
