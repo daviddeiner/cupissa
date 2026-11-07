@@ -1,5 +1,5 @@
 /* CUPISSA | PWA Service Worker. Versionar esta constante cuando se publiquen cambios. */
-const CUPISSA_CACHE = 'cupissa-app-shell-portal-restore-20261107';
+const CUPISSA_CACHE = 'cupissa-app-shell-20261107-banner20-auto5-v1-web';
 const CUPISSA_CACHE_PREFIX = 'cupissa-app-shell-';
 const CUPISSA_ASSETS = [
   'index.html',
@@ -17,13 +17,13 @@ const CUPISSA_ASSETS = [
   'credito-cupissa/',
   'politica-y-condiciones-de-alquileres/',
   'catalogo/manifest.webmanifest',
-  'catalogo/assets/css/catalogo.css',
-  'catalogo/assets/js/00-config-state.js',
-  'catalogo/assets/js/01-initialization.js',
+  'catalogo/assets/css/catalogo.css?v=20261107-banner20-auto5-v1',
+  'catalogo/assets/js/00-config-state.js?v=20261107-banner20-auto5-v1',
+  'catalogo/assets/js/01-initialization.js?v=20261107-banner20-auto5-v1',
   'catalogo/assets/js/01-tailwind-config.js',
   'catalogo/assets/js/02-product-data.js?v=20261107-product-card-2',
-  'catalogo/assets/js/03-filters-search.js',
-  'catalogo/assets/js/04-product-grid.js?v=20261107-product-card-2',
+  'catalogo/assets/js/03-filters-search.js?v=20261107-banner20-auto5-v1',
+  'catalogo/assets/js/04-product-grid.js?v=20261107-banner20-auto5-v1',
   'catalogo/assets/js/05-product-modal.js?v=20261107-product-card-2',
   'catalogo/assets/js/06-cart-favorites-state.js',
   'catalogo/assets/js/07-cart.js',
