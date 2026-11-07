@@ -67,3 +67,7 @@ body.cupissa-web-product #modal-full-image img{max-height:78dvh!important;max-wi
 
 body.cupissa-web-product #modal-product-options .product-modal-actions{margin-top:auto!important}
 }
+
+/* CUPISSA: solo el desplegable original de tallas (sin chips duplicados). */
+body.cupissa-web-product #wrapper-tallas .app-variant-choices,body.app-cupissa #wrapper-tallas .app-variant-choices{display:none!important}
+body.cupissa-web-product #wrapper-tallas select,body.app-cupissa #wrapper-tallas select{display:block!important;position:static!important;clip-path:none!important;opacity:1!important;pointer-events:auto!important;width:100%!important;height:auto!important;min-height:44px!important;overflow:visible!important}
