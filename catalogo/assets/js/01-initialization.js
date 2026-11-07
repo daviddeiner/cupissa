@@ -1,63 +1,38 @@
 /**
- * CUPISSA | Catálogo / inicialización y scroll progresivo.
- * El lote siguiente se agrega antes de que el usuario alcance el final en móvil y escritorio.
+ * CUPISSA | Catálogo / carga gradual automática.
+ * Primeros 20 productos al iniciar; otros 20 cada 5 segundos.
+ * No depende del scroll y no reconstruye las tarjetas ya visibles.
  */
 
-let productsInfiniteObserver = null;
+let productsBatchTimer = null;
 
 function loadNextProductsBatch() {
     if (isLoadingMore || displayLimit >= filteredProducts.length) return;
-
     isLoadingMore = true;
     const statusContainer = document.getElementById('scroll-status-container');
     const loadingMsg = document.getElementById('scroll-loading-msg');
     const endMsg = document.getElementById('scroll-end-msg');
-
     if (statusContainer) statusContainer.classList.remove('hidden');
     if (loadingMsg) loadingMsg.classList.remove('hidden');
     if (endMsg) endMsg.classList.add('hidden');
 
-    window.setTimeout(() => {
-        displayLimit = Math.min(displayLimit + 12, filteredProducts.length);
+    try {
+        displayLimit = Math.min(displayLimit + CUPISSA_PRODUCT_BATCH_SIZE, filteredProducts.length);
         renderProductsGrid();
+    } finally {
         isLoadingMore = false;
-
-        // Si el lote recién añadido todavía deja la sentinela cerca, carga otro lote
-        // para evitar que el usuario vea un hueco o tenga que llegar al pie de página.
-        window.requestAnimationFrame(() => {
-            const sentinel = document.getElementById('scroll-status-container');
-            if (!sentinel || displayLimit >= filteredProducts.length) return;
-            const nearViewport = sentinel.getBoundingClientRect().top <= window.innerHeight + 700;
-            if (nearViewport) loadNextProductsBatch();
-        });
-    }, 160);
+        if (loadingMsg) loadingMsg.classList.add('hidden');
+    }
 }
 
-function setupInfiniteProductLoading() {
-    const sentinel = document.getElementById('scroll-status-container');
-    if (!sentinel) return;
-
-    if ('IntersectionObserver' in window) {
-        productsInfiniteObserver = new IntersectionObserver(entries => {
-            if (entries.some(entry => entry.isIntersecting)) loadNextProductsBatch();
-        }, {
-            root: null,
-            rootMargin: '700px 0px',
-            threshold: 0
-        });
-        productsInfiniteObserver.observe(sentinel);
-    } else {
-        window.addEventListener('scroll', () => {
-            if (isLoadingMore || displayLimit >= filteredProducts.length) return;
-            const nearBottom = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 900;
-            if (nearBottom) loadNextProductsBatch();
-        }, { passive: true });
-    }
+function setupAutomaticProductLoading() {
+    if (productsBatchTimer !== null) return;
+    productsBatchTimer = window.setInterval(loadNextProductsBatch, 5000);
 }
 
 window.onload = function() {
     updateBadges();
-    setupInfiniteProductLoading();
+    setupAutomaticProductLoading();
     fetchCatalogProducts();
     if (typeof initializeCatalogAccountState === 'function') {
         Promise.resolve(initializeCatalogAccountState()).catch(error => {
