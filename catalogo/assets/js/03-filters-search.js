@@ -81,7 +81,7 @@ function renderFilters() {
             const activeBtn = document.getElementById(`btn-mundo-${mundo.toString().toLowerCase() === 'todos' ? 'todos' : mundo}`);
             if (activeBtn) activeBtn.className = "px-2.5 py-1 sm:px-4 sm:py-2 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-wider transition-all bg-pink-600 text-white flex items-center space-x-1 sm:space-x-2 shrink-0 shadow-sm";
             
-            displayLimit = 12;
+            displayLimit = CUPISSA_PRODUCT_BATCH_SIZE;
             applyFiltersAndSearch();
         }
 
@@ -93,7 +93,7 @@ function renderFilters() {
             const activeBtn = document.getElementById(`btn-temp-${temp.toString().toLowerCase() === 'todas' ? 'todas' : temp}`);
             if (activeBtn) activeBtn.className = "px-2 py-1 sm:px-3 sm:py-1.5 rounded-md sm:rounded-lg font-black text-white bg-pink-600 shadow-sm transition-all shrink-0";
             
-            displayLimit = 12;
+            displayLimit = CUPISSA_PRODUCT_BATCH_SIZE;
             applyFiltersAndSearch();
         }
 
@@ -105,7 +105,7 @@ function renderFilters() {
             const activeBtn = document.getElementById(`btn-cat-${cat.toString().toLowerCase() === 'todas' ? 'todas' : cat}`);
             if (activeBtn) activeBtn.className = "px-2 py-1 sm:px-3 sm:py-1.5 rounded-md sm:rounded-lg font-black text-white bg-pink-600 shadow-sm transition-all shrink-0";
             
-            displayLimit = 12;
+            displayLimit = CUPISSA_PRODUCT_BATCH_SIZE;
             applyFiltersAndSearch();
         }
 
@@ -117,12 +117,12 @@ function renderFilters() {
             const activeBtn = document.getElementById(`btn-subcat-${subcat.toString().toLowerCase() === 'todas' ? 'todas' : subcat}`);
             if (activeBtn) activeBtn.className = "px-2 py-1 sm:px-3 sm:py-1.5 rounded-md sm:rounded-lg font-black text-white bg-pink-600 shadow-sm transition-all shrink-0";
             
-            displayLimit = 12;
+            displayLimit = CUPISSA_PRODUCT_BATCH_SIZE;
             applyFiltersAndSearch();
         }
 
         function handleSmartSearch() {
-            displayLimit = 12;
+            displayLimit = CUPISSA_PRODUCT_BATCH_SIZE;
             if (window.cupissaSearchTimer) window.clearTimeout(window.cupissaSearchTimer);
             window.cupissaSearchTimer = window.setTimeout(() => {
                 applyFiltersAndSearch();
