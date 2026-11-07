@@ -71,44 +71,35 @@
 
     <main class="flex-1 max-w-5xl w-full mx-auto p-4 sm:p-6 lg:p-8">
 
-        <!-- LOGIN FORM -->
-        <div id="client-login-card" class="max-w-md mx-auto my-8 bg-white rounded-3xl shadow-xl border border-pink-100 overflow-hidden">
-            <div class="fuchsia-bg p-8 text-center text-white">
-                <div class="w-16 h-16 mx-auto mb-3 bg-white/20 backdrop-blur-md rounded-2xl p-3 flex items-center justify-center">
-                    <i class="fa-solid fa-mobile-screen-button text-3xl text-white"></i>
-                </div>
-                <h2 class="text-2xl font-black">Portal de Pagos</h2>
-                <p class="text-pink-100 text-xs mt-1">Ingresa con el correo de tu cuenta CUPISSA. No necesitas contraseña.</p>
-            </div>
-            
-            <form id="client-login-form" onsubmit="handleClientLogin(event)" class="p-6 sm:p-8 space-y-5">
-                <div id="login-error" class="hidden bg-pink-50 border border-pink-200 fuchsia-text text-xs p-3 rounded-xl flex items-center space-x-2 font-medium">
-                    <i class="fa-solid fa-circle-exclamation text-base"></i>
-                    <span>Correo o contraseña incorrectos.</span>
-                </div>
-
-                <div>
-                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Correo electrónico</label>
-                    <input type="email" id="login-email" autocomplete="username" autocapitalize="none" required placeholder="tucorreo@ejemplo.com" class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-pink-500 text-sm font-semibold">
-                </div>
-
-                <p class="text-xs text-slate-500">Te enviaremos un código de seis dígitos para verificar tu correo.</p>
-                <button type="submit" class="w-full py-3.5 fuchsia-btn font-bold rounded-xl shadow-lg transition-all text-sm flex items-center justify-center space-x-2">
-                    <span>Enviar código de acceso</span>
-                    <i class="fa-solid fa-envelope"></i>
-                </button>
-                <div class="relative flex items-center gap-3 py-1"><div class="h-px bg-slate-200 flex-1"></div><span class="text-[10px] uppercase tracking-widest text-slate-400 font-bold">O continúa con</span><div class="h-px bg-slate-200 flex-1"></div></div>
-                <button type="button" onclick="handleClientGoogleLogin()" class="w-full py-3 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-bold text-sm flex items-center justify-center gap-2"><i class="fa-brands fa-google text-base"></i> Continuar con Google</button>
-            </form>
-            <div id="client-login-otp-panel" class="hidden p-6 sm:p-8 pt-0 space-y-4">
-                <p class="text-sm text-slate-600">Enviamos un código a <strong id="client-login-otp-email"></strong>.</p>
-                <label for="client-login-otp-code" class="block text-xs font-bold uppercase tracking-wider text-slate-700">Código de acceso</label>
-                <input id="client-login-otp-code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" placeholder="000000" class="w-full px-4 py-3 rounded-xl border border-slate-200 text-center tracking-[.35em] text-lg font-black focus:outline-none focus:ring-2 focus:ring-pink-500">
-                <button type="button" onclick="handleClientOtpVerify()" class="w-full py-3.5 fuchsia-btn font-bold rounded-xl shadow-lg text-sm">Verificar e ingresar</button>
-                <button type="button" onclick="resendClientLoginOtp()" class="w-full text-xs font-bold text-pink-600 underline">Enviar un código nuevo</button>
-                <button type="button" onclick="backToClientEmailLogin()" class="w-full text-xs text-slate-500">Cambiar correo</button>
-            </div>
-        </div>
+        <!-- Acceso unificado: el Portal solo consulta la sesión iniciada desde Perfil. -->
+        <section id="client-login-card" class="cupissa-portal-access-card" aria-live="polite">
+          <div class="cupissa-portal-access-icon"><i class="fa-solid fa-lock"></i></div>
+          <p class="cupissa-portal-access-kicker">MI PORTAL CUPISSA</p>
+          <h2>Tu información, en un solo lugar</h2>
+          <p>Inicia sesión desde <strong>Perfil</strong> para consultar aquí tus créditos, cuotas y pagos de forma segura.</p>
+          <button type="button" id="cupissa-portal-open-profile" class="cupissa-portal-profile-action"><i class="fa-regular fa-user"></i> Ir a Perfil</button>
+          <p class="cupissa-portal-access-help">Una vez ingreses a tu cuenta, vuelve al Portal para ver tu información.</p>
+        </section>
+        <style>
+          .cupissa-portal-access-card{width:min(100%,430px);margin:clamp(24px,6vh,65px) auto;padding:35px 23px;text-align:center;background:#fff;border:1px solid #f8d7e7;border-radius:28px;box-shadow:0 14px 32px #9f447010;box-sizing:border-box;color:#161225}
+          .cupissa-portal-access-card.hidden{display:none!important}
+          .cupissa-portal-access-icon{display:grid;place-items:center;width:68px;height:68px;margin:0 auto 15px;background:#fff0f7;color:#d81572;border-radius:22px;font-size:25px}
+          .cupissa-portal-access-kicker{font-size:11px;letter-spacing:2px;font-weight:800;color:#e31878;margin:0 0 6px}
+          .cupissa-portal-access-card h2{font-size:clamp(21px,5vw,27px);line-height:1.15;font-weight:900;margin:0 0 15px}
+          .cupissa-portal-access-card>p:not(.cupissa-portal-access-kicker){font-size:14px;line-height:1.65;color:#586174;margin:0 0 22px}
+          .cupissa-portal-profile-action{display:inline-flex;align-items:center;justify-content:center;gap:10px;background:#e41379;color:white;border:0;border-radius:15px;padding:14px 28px;font-weight:800;font-size:14px;cursor:pointer;min-height:49px}
+          .cupissa-portal-access-card .cupissa-portal-access-help{font-size:12px!important;margin:19px 0 0!important;color:#8992a5!important}
+        </style>
+        <script>
+        document.addEventListener('DOMContentLoaded',function(){
+          document.getElementById('cupissa-portal-open-profile')?.addEventListener('click',function(){
+            if(window.parent!==window){
+              try{window.parent.setMobileNavSection?.('profile');window.parent.openProfileModal?.();return;}catch(e){}
+              window.parent.postMessage({type:'CUPISSA_OPEN_PROFILE'},window.location.origin);
+            }else{window.location.href='/perfil/';}
+          });
+        });
+        </script>
 
         <!-- DASHBOARD CLIENTE -->
         <div id="client-dashboard" class="hidden space-y-6">
