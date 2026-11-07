@@ -1166,3 +1166,12 @@ body.profile-open #mobile-app-nav { display: flex !important; z-index: 9999; pos
   #products-grid > [data-cupissa-product-id] > div:last-child, #season-featured-grid > [data-cupissa-product-id] > div:last-child {margin-top:auto !important;}
   #products-grid .product-card-photo, #season-featured-grid .product-card-photo {height:275px !important;max-height:275px !important;aspect-ratio:auto !important;object-fit:contain !important;}
 }
+
+/* Etiquetas legibles: títulos y nombres en caja natural. */
+.filter-group-title, .season-featured-title, .season-featured-eyebrow, .product-card-title, .catalog-title-row h1, #scroll-loading-msg, #scroll-end-msg {text-transform:none !important;}
+
+/* El aviso es visible al final de la grilla si aún quedan lotes por cargar. */
+.catalog-infinite-sentinel {height:auto !important; min-height:0 !important; max-height:none !important; margin:10px 0 14px !important; padding:0 !important; overflow:visible !important; opacity:1 !important; pointer-events:auto !important;}
+.catalog-infinite-sentinel.hidden {display:none !important;}
+#scroll-loading-msg:not(.hidden) {display:flex !important;}
+#scroll-loading-msg.hidden, #scroll-end-msg {display:none !important;}
