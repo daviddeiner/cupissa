@@ -53,7 +53,7 @@ function catalogProductCard(prod, options = {}) {
     if (cardPhoto) {
         const setNaturalSize = () => {
             if (!cardPhoto.naturalWidth || !cardPhoto.naturalHeight) return;
-            cardPhoto.style.aspectRatio = `${cardPhoto.naturalWidth} / ${cardPhoto.naturalHeight}`;
+            cardPhoto.style.removeProperty('aspect-ratio');
             cardPhoto.style.objectFit = 'contain';
         };
         cardPhoto.addEventListener('load', setNaturalSize, { once: true });
