@@ -91,12 +91,30 @@ window.addEventListener('message', event => {
         }
         return;
     }
+    if (event.data.type === 'CUPISSA_PROFILE_AUTH_CHANGED') cupissaShareProfileSessionToPortal();
     if (event.data.type === 'CUPISSA_PROFILE_CLOSE') closeProfileModal();
     if (event.data.type === 'CUPISSA_PROFILE_CHECKOUT') {
         closeProfileModal();
         window.location.href = '/checkout';
     }
 });
+
+/** Perfil y Portal usan la misma sesión de Supabase en este dominio.
+ * No copiar ni volver a establecer tokens: ambos clientes leen la sesión
+ * existente y el Portal valida la identidad antes de mostrar los créditos. */
+function cupissaShareProfileSessionToPortal() {
+    const portalWindow = document.getElementById('portal-frame')?.contentWindow;
+    if (!portalWindow) return;
+    try {
+        if (typeof portalWindow.cupissaPortalScheduleRestore === 'function') {
+            portalWindow.cupissaPortalScheduleRestore();
+        } else {
+            portalWindow.postMessage({ type: 'CUPISSA_PORTAL_REFRESH' }, location.origin);
+        }
+    } catch (error) {
+        console.warn('[CUPISSA] No se pudo avisar al Portal:', error);
+    }
+}
 
 /** Abre el Portal de Pagos dentro del catálogo, sin cambiar la página actual. */
 function openPortalModal() {
@@ -110,7 +128,10 @@ function openPortalModal() {
     if (!modal || !frame) return;
 
     if (!frame.getAttribute('src')) {
+        frame.addEventListener('load', cupissaShareProfileSessionToPortal, { once: true });
         frame.setAttribute('src', frame.dataset.src || '/portal-pagos');
+    } else {
+        cupissaShareProfileSessionToPortal();
     }
     modal.classList.remove('hidden');
     modal.setAttribute('aria-hidden', 'false');
