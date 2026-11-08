@@ -1,10 +1,23 @@
-/* CUPISSA | Recomendaciones relacionadas, ordenadas por similitud real del catálogo. */
+/* CUPISSA | Productos parecidos: solo móvil y carga infinita como Inicio. */
 (() => {
   'use strict';
 
-  const RELATED_BATCH = 8;
+  const mobileQuery = window.matchMedia('(max-width: 767px)');
+  if (!mobileQuery.matches) return;
+
+  // Reutiliza exactamente el tamaño de lote y la pausa usados por Inicio.
+  const RELATED_BATCH = typeof CUPISSA_PRODUCT_BATCH_SIZE === 'number'
+    ? CUPISSA_PRODUCT_BATCH_SIZE
+    : 20;
+  const RELATED_LOAD_DELAY = 2000;
+  const RELATED_PREFETCH_MARGIN = '500px 0px';
+
   let currentRelatedProducts = [];
   let relatedRendered = 0;
+  let relatedObserver = null;
+  let relatedLoadTimer = null;
+  let relatedLoading = false;
+  let fallbackScrollHandler = null;
 
   function normalizeText(value) {
     return String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '')
@@ -85,7 +98,25 @@
     return card;
   }
 
+  function stopRelatedLoading() {
+    if (relatedObserver) {
+      relatedObserver.disconnect();
+      relatedObserver = null;
+    }
+    if (relatedLoadTimer !== null) {
+      window.clearTimeout(relatedLoadTimer);
+      relatedLoadTimer = null;
+    }
+    const inner = document.querySelector('#modal-product-options .product-modal-inner');
+    const sentinel = document.getElementById('cupissa-related-products-sentinel');
+    if (inner && fallbackScrollHandler) inner.removeEventListener('scroll', fallbackScrollHandler);
+    fallbackScrollHandler = null;
+    if (sentinel) sentinel.hidden = true;
+    relatedLoading = false;
+  }
+
   function ensureRelatedSection() {
+    if (!mobileQuery.matches || !document.body.classList.contains('cupissa-web-product')) return null;
     const modal = document.getElementById('modal-product-options');
     const inner = modal?.querySelector('.product-modal-inner');
     const grid = inner?.querySelector('.product-modal-grid');
@@ -96,19 +127,25 @@
       section = document.createElement('section');
       section.id = 'cupissa-related-products';
       section.setAttribute('aria-label', 'Productos parecidos');
+
       const heading = document.createElement('h3');
       heading.className = 'cupissa-related-heading';
       heading.textContent = 'Productos parecidos';
+
       const list = document.createElement('div');
       list.id = 'cupissa-related-products-grid';
       list.className = 'cupissa-related-grid';
-      const more = document.createElement('button');
-      more.id = 'cupissa-related-products-more';
-      more.type = 'button';
-      more.className = 'cupissa-related-more';
-      more.textContent = 'Ver más productos parecidos';
-      more.addEventListener('click', renderRelatedBatch);
-      section.append(heading, list, more);
+
+      const sentinel = document.createElement('div');
+      sentinel.id = 'cupissa-related-products-sentinel';
+      sentinel.className = 'cupissa-related-sentinel';
+      sentinel.setAttribute('aria-live', 'polite');
+      const loader = document.createElement('span');
+      loader.id = 'cupissa-related-products-loading';
+      loader.innerHTML = '<i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i><span>Cargando más productos parecidos...</span>';
+      sentinel.appendChild(loader);
+
+      section.append(heading, list, sentinel);
     }
 
     const actions = inner.querySelector('.product-modal-actions');
@@ -120,14 +157,65 @@
   function renderRelatedBatch() {
     const section = ensureRelatedSection();
     const list = section?.querySelector('#cupissa-related-products-grid');
-    const more = section?.querySelector('#cupissa-related-products-more');
-    if (!list || !more) return;
+    const sentinel = section?.querySelector('#cupissa-related-products-sentinel');
+    if (!list || !sentinel || !mobileQuery.matches) return;
 
     const nextBatch = currentRelatedProducts.slice(relatedRendered, relatedRendered + RELATED_BATCH);
     nextBatch.forEach(product => list.appendChild(createRelatedCard(product)));
     relatedRendered += nextBatch.length;
-    more.hidden = relatedRendered >= currentRelatedProducts.length;
-    if (!currentRelatedProducts.length) section.hidden = true;
+
+    const hasMore = relatedRendered < currentRelatedProducts.length;
+    sentinel.hidden = !hasMore;
+    if (hasMore) observeRelatedSentinel();
+    else stopRelatedLoading();
+  }
+
+  function scheduleRelatedBatch() {
+    if (relatedLoadTimer !== null || relatedLoading || relatedRendered >= currentRelatedProducts.length) return;
+    relatedLoading = true;
+    const sentinel = document.getElementById('cupissa-related-products-sentinel');
+    if (sentinel) sentinel.classList.add('is-loading');
+
+    // La misma pausa de dos segundos que utiliza la carga progresiva de Inicio.
+    relatedLoadTimer = window.setTimeout(() => {
+      relatedLoadTimer = null;
+      relatedLoading = false;
+      const currentModal = document.getElementById('modal-product-options');
+      if (!mobileQuery.matches || currentModal?.classList.contains('hidden')) {
+        stopRelatedLoading();
+        return;
+      }
+      if (sentinel) sentinel.classList.remove('is-loading');
+      renderRelatedBatch();
+    }, RELATED_LOAD_DELAY);
+  }
+
+  function observeRelatedSentinel() {
+    if (!mobileQuery.matches || relatedRendered >= currentRelatedProducts.length) return;
+    const inner = document.querySelector('#modal-product-options .product-modal-inner');
+    const sentinel = document.getElementById('cupissa-related-products-sentinel');
+    if (!inner || !sentinel) return;
+
+    if (relatedObserver) relatedObserver.disconnect();
+    if ('IntersectionObserver' in window) {
+      relatedObserver = new IntersectionObserver(entries => {
+        if (entries.some(entry => entry.isIntersecting)) {
+          if (relatedObserver) relatedObserver.unobserve(sentinel);
+          scheduleRelatedBatch();
+        }
+      }, { root: inner, rootMargin: RELATED_PREFETCH_MARGIN, threshold: 0 });
+      relatedObserver.observe(sentinel);
+      return;
+    }
+
+    if (!fallbackScrollHandler) {
+      fallbackScrollHandler = () => {
+        const remaining = inner.scrollHeight - inner.scrollTop - inner.clientHeight;
+        if (remaining <= 500) scheduleRelatedBatch();
+      };
+      inner.addEventListener('scroll', fallbackScrollHandler, { passive: true });
+    }
+    fallbackScrollHandler();
   }
 
   function updateRelatedProducts(product) {
@@ -135,6 +223,7 @@
     const section = ensureRelatedSection();
     if (!section) return;
 
+    stopRelatedLoading();
     currentRelatedProducts = allProducts
       .filter(item => String(item?.id) !== String(product?.id))
       .map((item, index) => ({ product: item, index, score: similarityScore(product, item) }))
@@ -152,7 +241,7 @@
   if (typeof originalOpen === 'function') {
     window.openOptionsModal = function(productId) {
       const result = originalOpen.apply(this, arguments);
-      if (!document.body.classList.contains('cupissa-web-product')) return result;
+      if (!mobileQuery.matches || !document.body.classList.contains('cupissa-web-product')) return result;
       const product = typeof rawProducts !== 'undefined'
         ? rawProducts.find(item => String(item.id) === String(productId))
         : null;
@@ -160,4 +249,19 @@
       return result;
     };
   }
+
+  const originalClose = window.closeOptionsModal;
+  if (typeof originalClose === 'function') {
+    window.closeOptionsModal = function() {
+      stopRelatedLoading();
+      return originalClose.apply(this, arguments);
+    };
+  }
+
+  mobileQuery.addEventListener?.('change', event => {
+    if (event.matches) return;
+    stopRelatedLoading();
+    const section = document.getElementById('cupissa-related-products');
+    if (section) section.hidden = true;
+  });
 })();
