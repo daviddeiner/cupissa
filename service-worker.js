@@ -1,5 +1,5 @@
 /* CUPISSA | PWA Service Worker. Versionar esta constante cuando se publiquen cambios. */
-const CUPISSA_CACHE = 'cupissa-app-shell-20261107-banner20-auto5-v1-web';
+const CUPISSA_CACHE = 'cupissa-app-shell-20261108-notas-back-v1';
 const CUPISSA_CACHE_PREFIX = 'cupissa-app-shell-';
 const CUPISSA_ASSETS = [
   'index.html',
@@ -43,9 +43,10 @@ const CUPISSA_ASSETS = [
   'assets/css/checkout.css',
   'assets/js/checkout.js?v=20261107-rental-stock-2',
   'assets/css/perfil.css',
-  'assets/js/perfil.js?v=20261107-portal-restauracion-simple-v4',
+  'assets/js/perfil.js?v=20261108-notas-pedido-v1',
   'shared/js/cupissa-auth.js?v=20261107-google-mobile-v2',
   'shared/js/supabase-config.js',
+  'shared/js/cupissa-back-navigation.js?v=20261108-back-navigation-v1',
   'portal-pagos/index.html',
   'portal-pagos/assets/css/portal.css',
   'portal-pagos/assets/js/02-supabase-config-state.js',
