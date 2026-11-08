@@ -8,30 +8,6 @@ const grid=modal.querySelector('.product-modal-grid');
 const actions=modal.querySelector('.product-modal-actions');
 const gallery=modal.querySelector('.product-modal-media');
 if(actions&&grid&&actions.parentElement!==inner){inner.appendChild(actions)}
-const details=modal.querySelector('#product-modal-details');
-let detailsButton=modal.querySelector('#cupissa-mobile-view-details');
-if(!detailsButton){
-  detailsButton=document.createElement('button');
-  detailsButton.id='cupissa-mobile-view-details';
-  detailsButton.type='button';
-  detailsButton.hidden=true;
-  detailsButton.innerHTML='<span>Ver detalles</span><i class="fa-solid fa-arrow-down" aria-hidden="true"></i>';
-  detailsButton.setAttribute('aria-label','Bajar a la descripción y opciones del producto');
-  modal.appendChild(detailsButton);
-}
-function syncDetailsButton(){
-  if(!detailsButton||modal.classList.contains('hidden')||!details)return;
-  const innerTop=inner.getBoundingClientRect().top;
-  const detailsTop=details.getBoundingClientRect().top-innerTop;
-  detailsButton.hidden=detailsTop<=110;
-}
-detailsButton.addEventListener('click',()=>{
-  if(!details||!inner)return;
-  const top=details.getBoundingClientRect().top-inner.getBoundingClientRect().top+inner.scrollTop-12;
-  inner.scrollTo({top:Math.max(0,top),behavior:'smooth'});
-  detailsButton.hidden=true;
-});
-inner?.addEventListener('scroll',()=>requestAnimationFrame(syncDetailsButton),{passive:true});
 let count=gallery?.querySelector('.app-gallery-count');
 if(gallery&&!count){count=document.createElement('div');count.className='app-gallery-count';count.setAttribute('aria-live','polite');gallery.appendChild(count)}
 let stickyPrice=actions?.querySelector('.app-sticky-price');
@@ -87,13 +63,12 @@ if(typeof oldOpen==='function')window.openOptionsModal=function(...args){
   variantChips('color');
   document.body.classList.add('cupissa-product-open');
   if(inner)inner.scrollTop=0;
-  requestAnimationFrame(()=>{updateCount();syncDetailsButton()});
+  requestAnimationFrame(updateCount);
   return result;
 };
 const oldClose=window.closeOptionsModal;
 if(typeof oldClose==='function')window.closeOptionsModal=function(...args){
   const result=oldClose(...args);
-  if(detailsButton)detailsButton.hidden=true;
   document.body.classList.remove('cupissa-product-open');return result
 };
 thumbs?.addEventListener('click',()=>requestAnimationFrame(()=>{updateCount();syncColorChoice()}));

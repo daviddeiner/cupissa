@@ -36,9 +36,6 @@ function openOptionsModal(prodId) {
             if (!prod) return;
 
             selectedProductModal = prod;
-            if (typeof window.registerCupissaProductOpen === 'function') {
-                window.registerCupissaProductOpen(prod.id);
-            }
             const permalink = document.getElementById('cupissa-product-permalink');
             if (permalink) permalink.href = `/producto/${encodeURIComponent(String(prod.id))}/`;
             selectedQtyModal = 1;
@@ -95,10 +92,7 @@ function openOptionsModal(prodId) {
 
             const thumbsContainer = document.getElementById('opt-modal-thumbs');
             thumbsContainer.innerHTML = '';
-            const hasMultiplePhotos = fotos.length > 1;
-            thumbsContainer.classList.toggle('hidden', !hasMultiplePhotos);
-            thumbsContainer.setAttribute('aria-hidden', String(!hasMultiplePhotos));
-            if (hasMultiplePhotos) {
+            if (fotos.length > 1) {
                 fotos.forEach((url, idx) => {
                     const thumb = document.createElement('img');
                     thumb.src = url;

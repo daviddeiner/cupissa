@@ -1,5 +1,5 @@
 /* CUPISSA | PWA Service Worker. Versionar esta constante cuando se publiquen cambios. */
-const CUPISSA_CACHE = 'cupissa-app-shell-20261108-recomendaciones-detalles-v1';
+const CUPISSA_CACHE = 'cupissa-app-shell-20261107-banner20-auto5-v1-web';
 const CUPISSA_CACHE_PREFIX = 'cupissa-app-shell-';
 const CUPISSA_ASSETS = [
   'index.html',
@@ -17,15 +17,14 @@ const CUPISSA_ASSETS = [
   'credito-cupissa/',
   'politica-y-condiciones-de-alquileres/',
   'catalogo/manifest.webmanifest',
-  'catalogo/assets/css/catalogo.css?v=20261107-seo-auto2-v2',
-  'catalogo/assets/css/ficha-producto-movil.css?v=20261108-detalles-movil-1',
+  'catalogo/assets/css/catalogo.css?v=20261107-banner20-auto5-v1',
   'catalogo/assets/js/00-config-state.js?v=20261107-banner20-auto5-v1',
   'catalogo/assets/js/01-initialization.js?v=20261107-banner20-auto5-v1',
   'catalogo/assets/js/01-tailwind-config.js',
-  'catalogo/assets/js/02-product-data.js?v=20261108-recomendaciones-1',
+  'catalogo/assets/js/02-product-data.js?v=20261107-product-card-2',
   'catalogo/assets/js/03-filters-search.js?v=20261107-banner20-auto5-v1',
   'catalogo/assets/js/04-product-grid.js?v=20261107-banner20-auto5-v1',
-  'catalogo/assets/js/05-product-modal.js?v=20261108-modal-galeria-1',
+  'catalogo/assets/js/05-product-modal.js?v=20261107-product-card-2',
   'catalogo/assets/js/06-cart-favorites-state.js',
   'catalogo/assets/js/07-cart.js',
   'catalogo/assets/js/08-checkout.js',
@@ -34,9 +33,7 @@ const CUPISSA_ASSETS = [
   'catalogo/assets/js/11-responsive-navigation.js?v=20261107-portal-restauracion-simple-v4',
   'catalogo/assets/js/12-cart-animation.js',
   'catalogo/assets/js/13-brand-ui.js',
-  'catalogo/assets/js/14-product-activity.js?v=20261108-ranking-1',
-  'catalogo/assets/js/16-product-recommendations.js?v=20261108-similares-1',
-  'catalogo/assets/js/ficha-producto-movil.js?v=20261108-detalles-movil-1',
+  'catalogo/assets/js/14-product-activity.js',
   'catalogo/assets/js/15-pwa-install.js',
   'catalogo/assets/images/logo.png',
   'catalogo/assets/images/favicon.png',
@@ -44,7 +41,7 @@ const CUPISSA_ASSETS = [
   'catalogo/assets/images/app-icon-512.png',
   'catalogo/assets/images/app-icon-180.png',
   'assets/css/checkout.css',
-  'assets/js/checkout.js?v=20261108-tarifas-barrios-1',
+  'assets/js/checkout.js?v=20261107-rental-stock-2',
   'assets/css/perfil.css',
   'assets/js/perfil.js?v=20261107-portal-restauracion-simple-v4',
   'shared/js/cupissa-auth.js?v=20261107-google-mobile-v2',
