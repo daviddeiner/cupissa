@@ -34,8 +34,8 @@
     <!-- Datos estructurados del catálogo; las fichas de cada producto tienen sus metadatos individuales. -->
     <script id="seo-schema-script" type="application/ld+json"></script>
 
-    <link rel="stylesheet" href="/catalogo/assets/css/catalogo.css?v=20261107-seo-auto2-v2">
-<link rel="stylesheet" href="/catalogo/assets/css/ficha-producto-movil.css?v=20261108-detalles-movil-2">
+    <link rel="stylesheet" href="/catalogo/assets/css/catalogo.css?v=20261108-tallas-lupa-v1">
+<link rel="stylesheet" href="/catalogo/assets/css/ficha-producto-movil.css?v=20261109-colores-desplegable-2">
 <script>
 (function(){
   var path=window.location.pathname;
@@ -113,11 +113,9 @@
         <div id="mobile-filter-backdrop" onclick="closeMobileFilters()" aria-hidden="true"></div>
         <div class="catalog-layout">
             <aside id="catalog-filter-sidebar" aria-label="Filtros del catálogo">
-                <!-- En escritorio, todos los filtros se muestran como listas desplegables. -->
-                <section class="filter-group filter-dropdown-group filter-worlds-group">
-                    <button type="button" class="filter-dropdown-toggle" onclick="toggleCatalogDropdown(this)" aria-expanded="false" aria-controls="mundos-container">
-                        <span class="filter-group-title">Mundos</span><i class="fa-solid fa-chevron-down filter-dropdown-chevron"></i>
-                    </button>
+                <!-- Mundos siempre visibles; los filtros avanzan por Temporada > Categoría > Subcategoría. -->
+                <section class="filter-group filter-worlds-group">
+                    <span class="filter-group-title">Mundos</span>
                     <div class="flex items-center space-x-1.5 sm:space-x-2 overflow-x-auto custom-scrollbar pb-1.5 filter-options-list" id="mundos-container">
                         <button onclick="filterByMundo('TODOS')" id="btn-mundo-todos" class="px-2.5 py-1 sm:px-4 sm:py-2 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-wider transition-all bg-pink-600 text-white flex items-center space-x-1.5 shrink-0 shadow-sm">
                             <i class="fa-solid fa-border-all text-[9px] sm:text-xs"></i><span>Todos los mundos</span>
@@ -125,16 +123,14 @@
                     </div>
                 </section>
 
-                <!-- Se mantienen los identificadores y las funciones originales de cada filtro. -->
+                <!-- Las categorías y subcategorías aparecen solo cuando existe una selección previa. -->
                 <div id="catalog-filter-sections" class="filter-sections-card">
                     <button type="button" class="mobile-filter-close" onclick="closeMobileFilters()" aria-label="Cerrar filtros">
                         <span>Filtros</span><i class="fa-solid fa-xmark"></i>
                     </button>
 
-                    <section class="filter-group filter-dropdown-group">
-                        <button type="button" class="filter-dropdown-toggle" onclick="toggleCatalogDropdown(this)" aria-expanded="false" aria-controls="temporadas-container">
-                            <span class="filter-group-title">Temporadas</span><i class="fa-solid fa-chevron-down filter-dropdown-chevron"></i>
-                        </button>
+                    <section class="filter-group filter-season-group">
+                        <span class="filter-group-title">Temporadas</span>
                         <div class="flex items-center gap-1.5 text-[10px] sm:text-xs filter-options-list">
                             <div class="flex items-center space-x-1.5 overflow-x-auto custom-scrollbar" id="temporadas-container">
                                 <button onclick="filterByTemporada('TODAS')" id="btn-temp-todas" class="px-2 py-1 sm:px-3 sm:py-1.5 rounded-md sm:rounded-lg font-bold text-white bg-pink-600 transition-all shrink-0">Todas</button>
@@ -142,10 +138,8 @@
                         </div>
                     </section>
 
-                    <section class="filter-group filter-dropdown-group">
-                        <button type="button" class="filter-dropdown-toggle" onclick="toggleCatalogDropdown(this)" aria-expanded="false" aria-controls="categorias-container">
-                            <span class="filter-group-title">Categorías</span><i class="fa-solid fa-chevron-down filter-dropdown-chevron"></i>
-                        </button>
+                    <section id="category-filter-section" class="filter-group dependent-filter-group" hidden>
+                        <span class="filter-group-title" id="category-filter-title">Categorías disponibles</span>
                         <div class="flex items-center gap-1.5 text-[10px] sm:text-xs filter-options-list">
                             <div class="flex items-center space-x-1.5 overflow-x-auto custom-scrollbar" id="categorias-container">
                                 <button onclick="filterByCategoria('TODAS')" id="btn-cat-todas" class="px-2 py-1 sm:px-3 sm:py-1.5 rounded-md sm:rounded-lg font-bold text-white bg-pink-600 transition-all shrink-0">Todas</button>
@@ -153,10 +147,8 @@
                         </div>
                     </section>
 
-                    <section class="filter-group filter-dropdown-group">
-                        <button type="button" class="filter-dropdown-toggle" onclick="toggleCatalogDropdown(this)" aria-expanded="false" aria-controls="subcategorias-container">
-                            <span class="filter-group-title">Subcategorías</span><i class="fa-solid fa-chevron-down filter-dropdown-chevron"></i>
-                        </button>
+                    <section id="subcategory-filter-section" class="filter-group dependent-filter-group" hidden>
+                        <span class="filter-group-title" id="subcategory-filter-title">Subcategorías disponibles</span>
                         <div class="flex items-center gap-1.5 text-[10px] sm:text-xs filter-options-list">
                             <div class="flex items-center space-x-1.5 overflow-x-auto custom-scrollbar" id="subcategorias-container">
                                 <button onclick="filterBySubcategoria('TODAS')" id="btn-subcat-todas" class="px-2 py-1 sm:px-3 sm:py-1.5 rounded-md sm:rounded-lg font-bold text-white bg-pink-600 transition-all shrink-0">Todas</button>
@@ -338,7 +330,9 @@
                     <div class="relative rounded-2xl overflow-hidden bg-slate-50 border border-slate-100 group flex items-center justify-center">
                         <img id="opt-modal-img" src="" alt="Producto Cupissa" class="block w-full h-auto max-h-[520px] object-contain">
                         <div class="absolute top-3 left-3 flex flex-wrap gap-1" id="opt-modal-badges"></div>
-                        
+                        <button id="btn-open-full-image" type="button" onclick="openFullImageModal()" class="cupissa-open-full-image" aria-label="Ampliar fotografía del producto" title="Ampliar fotografía">
+                            <i class="fa-solid fa-magnifying-glass-plus" aria-hidden="true"></i><span>Ampliar</span>
+                        </button>
                     </div>
                     <div class="flex items-center space-x-2 overflow-x-auto custom-scrollbar pb-1" id="opt-modal-thumbs"></div>
                 </div>
@@ -346,6 +340,7 @@
                     <div>
                         <span id="opt-modal-subcat" class="text-[11px] font-black uppercase text-pink-600 tracking-wider">Textil</span>
                         <h2 id="opt-modal-title" class="text-xl font-black text-slate-900 tracking-tight mt-0.5">Nombre del producto</h2>
+                        <a id="cupissa-credit-whatsapp" data-card-ignore-open target="_blank" rel="noopener noreferrer" href="https://wa.me/573147671380" class="inline-flex items-center gap-1.5 mt-1.5 px-2.5 py-1 rounded-full bg-pink-50 text-pink-700 border border-pink-100 text-[10px] font-extrabold hover:bg-pink-100 transition-colors"><i class="fa-brands fa-whatsapp" aria-hidden="true"></i> Pedir a crédito</a>
                         <a id="cupissa-product-permalink" data-card-ignore-open href="/catalogo/" hidden aria-hidden="true" tabindex="-1" style="display:none" class="inline-flex mt-2 items-center gap-1 text-[11px] text-pink-700 font-bold underline underline-offset-2"><i class="fa-solid fa-link" aria-hidden="true"></i> Ver enlace del producto</a>
                         <span id="opt-modal-ref" class="text-[10px] text-slate-400 font-bold block mt-0.5">Ref: CUP-0000</span>
 
@@ -367,9 +362,12 @@
                             </div>
                         </div>
 
-                        <div id="wrapper-tallas" class="mt-3 space-y-1 hidden">
-                            <label class="block text-xs font-bold text-slate-700 uppercase">Seleccionar Talla *</label>
-                            <select id="opt-select-talla" onchange="recalculateProductPrice()" class="w-full border border-slate-200 bg-slate-50/50 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-pink-500 focus:outline-none"></select>
+                        <p id="opt-wholesale-hint" class="mt-3 text-[10px] sm:text-[11px] font-bold text-pink-600">Llévalo al por mayor a partir de las unidades indicadas.</p>
+                        <div id="wrapper-tallas" class="mt-1 space-y-2 hidden">
+                            <label class="block text-xs font-bold text-slate-700 uppercase">Selecciona tallas y cantidades *</label>
+                            <select id="opt-select-talla" aria-hidden="true" tabindex="-1" style="display:none" onchange="recalculateProductPrice()"></select>
+                            <div id="opt-size-quantities" class="grid grid-cols-1 sm:grid-cols-2 gap-2"></div>
+                            <p id="opt-size-quantity-summary" class="text-[10px] font-bold text-slate-500"></p>
                         </div>
 
                         <div id="wrapper-colores" class="mt-3 space-y-1 hidden">
@@ -384,7 +382,7 @@
                     </div>
 
                     <div class="bg-slate-50 border border-slate-100 rounded-2xl p-4 space-y-3 mt-3">
-                        <div class="flex items-center justify-between">
+                        <div id="wrapper-modal-global-qty" class="flex items-center justify-between">
                             <div class="flex items-center space-x-2">
                                 <span class="text-xs font-bold text-slate-700 uppercase">Cantidad:</span>
                                 <div class="flex items-center border border-slate-200 bg-white rounded-xl overflow-hidden">
@@ -432,11 +430,13 @@
 
     <!-- VISOR DE IMÁGENES DEL CATÁLOGO (solo imágenes publicadas/recortadas) -->
     <div id="modal-full-image" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-[70] flex items-center justify-center hidden p-4">
-        <div class="relative max-w-4xl max-h-[90vh] w-full flex items-center justify-center">
-            <button onclick="closeFullImageModal()" class="absolute -top-12 right-0 text-white hover:text-pink-400 text-2xl font-bold flex items-center space-x-2 transition-colors">
+        <div id="full-image-zoom-stage" class="cupissa-full-image-stage">
+            <button onclick="closeFullImageModal()" class="cupissa-full-image-close text-white hover:text-pink-400 text-2xl font-bold flex items-center space-x-2 transition-colors">
                 <span>Cerrar</span><i class="fa-solid fa-xmark"></i>
             </button>
-            <img id="full-modal-img" src="" alt="Imagen publicada de CUPISSA" class="max-h-[85vh] max-w-full object-contain rounded-2xl shadow-2xl">
+            <img id="full-modal-img" src="" alt="Imagen publicada de CUPISSA" class="cupissa-full-image">
+            <div id="full-image-magnifier" class="cupissa-image-magnifier" aria-hidden="true"></div>
+            <div class="cupissa-zoom-hint"><i class="fa-solid fa-magnifying-glass-plus"></i> Mueve el cursor sobre la imagen para ampliar los detalles</div>
         </div>
     </div>
 
@@ -489,13 +489,14 @@
 
     <!-- Lógica modular del catálogo. Se conserva el orden de carga para mantener las dependencias globales. -->
     <script src="/shared/js/supabase-config.js"></script>
+    <script src="/shared/js/cupissa-back-navigation.js?v=20261108-back-step-1"></script>
     <script src="/catalogo/assets/js/00-config-state.js?v=20261107-seo-auto2-v2"></script>
     <script src="/catalogo/assets/js/01-initialization.js?v=20261107-seo-auto2-v2"></script>
     <script src="/catalogo/assets/js/02-product-data.js?v=20261108-recomendaciones-1"></script>
-    <script src="/catalogo/assets/js/03-filters-search.js?v=20261107-seo-auto2-v2"></script>
+    <script src="/catalogo/assets/js/03-filters-search.js?v=20261109-filtros-encadenados-3"></script>
     <script src="/catalogo/assets/js/04-product-grid.js?v=20261107-seo-meta-3"></script>
-    <script src="/catalogo/assets/js/05-product-modal.js?v=20261108-modal-galeria-1"></script>
-    <script src="/catalogo/assets/js/06-cart-favorites-state.js"></script>
+    <script src="/catalogo/assets/js/05-product-modal.js?v=20261108-whatsapp-mayorista-back-1"></script>
+    <script src="/catalogo/assets/js/06-cart-favorites-state.js?v=20261108-tallas-multiples-v1"></script>
     <script src="/catalogo/assets/js/07-cart.js"></script>
     <script src="/catalogo/assets/js/08-checkout.js"></script>
     <script src="/catalogo/assets/js/09-favorites.js"></script>
@@ -507,6 +508,6 @@
     <script src="/catalogo/assets/js/16-product-recommendations.js?v=20261108-similares-scroll-2"></script>
     <script src="/catalogo/assets/js/15-pwa-install.js"></script>
     <script src="/shared/js/security-console-notice.js?v=20261107-security-1"></script>
-<script src="/catalogo/assets/js/ficha-producto-movil.js?v=20261108-detalles-movil-1"></script>
+<script src="/catalogo/assets/js/ficha-producto-movil.js?v=20261109-colores-desplegable-2"></script>
 </body>
 </html>

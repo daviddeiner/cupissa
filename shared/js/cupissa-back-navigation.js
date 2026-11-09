@@ -59,6 +59,20 @@
       return;
     }
     if (isCatalogPage()) {
+      // En móvil, Atrás cierra primero la capa superior. Solo un segundo Atrás
+      // abandona esa vista o vuelve al inicio del catálogo.
+      const fullImage = document.getElementById('modal-full-image');
+      const productOptions = document.getElementById('modal-product-options');
+      if (fullImage && !fullImage.classList.contains('hidden')) {
+        if (typeof window.closeFullImageModal === 'function') window.closeFullImageModal();
+        installBackGuard();
+        return;
+      }
+      if (productOptions && !productOptions.classList.contains('hidden')) {
+        if (typeof window.closeOptionsModal === 'function') window.closeOptionsModal();
+        installBackGuard();
+        return;
+      }
       returnToCatalogStart();
       return;
     }

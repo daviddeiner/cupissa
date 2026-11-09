@@ -84,7 +84,10 @@ if(typeof oldOpen==='function')window.openOptionsModal=function(...args){
   const result=oldOpen(...args);
   document.getElementById('wrapper-tallas')?.querySelector('.app-variant-choices')?.remove();
   document.getElementById('wrapper-tallas')?.classList.remove('app-has-variant-chips');
-  variantChips('color');
+  // Los colores usan el desplegable compacto existente, no tarjetas grandes.
+  const colorWrapper=document.getElementById('wrapper-colores');
+  colorWrapper?.querySelector('.app-variant-choices')?.remove();
+  colorWrapper?.classList.remove('app-has-variant-chips');
   document.body.classList.add('cupissa-product-open');
   if(inner)inner.scrollTop=0;
   requestAnimationFrame(()=>{updateCount();syncDetailsButton()});

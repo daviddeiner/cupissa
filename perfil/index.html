@@ -16,7 +16,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <link rel="stylesheet" href="/assets/css/perfil.css">
+  <link rel="stylesheet" href="/assets/css/perfil.css?v=20261108-nota-cliente-v1">
 
   <style>
     body { font-family: Inter, sans-serif; }
@@ -189,14 +189,16 @@
               class="profile-input"
               type="email"
               inputmode="email"
-              autocomplete="username"
+              autocomplete="email"
               autocapitalize="none"
+              autocorrect="off"
+              spellcheck="false"
               required
-              placeholder="tucorreo@ejemplo.com"
+              placeholder="tucorreo@hotmail.com o tucorreo@gmail.com"
             >
           </div>
 
-          <p class="text-xs text-slate-500 leading-relaxed">Te enviaremos un código de acceso a tu correo. No necesitas contraseña.</p>
+          <p class="text-xs text-slate-500 leading-relaxed">Te enviaremos un código de acceso a cualquier correo válido: Hotmail, Outlook, Gmail u otro proveedor. No necesitas contraseña.</p>
 
           <button class="profile-primary w-full" type="submit">
             <span>Enviar código de acceso</span>
@@ -1151,8 +1153,8 @@
   ======================================================== -->
   <script src="/shared/js/supabase-config.js"></script>
   <script src="/catalogo/assets/js/00-config-state.js"></script>
-  <script src="/shared/js/cupissa-auth.js?v=20261107-otp-modal-v3"></script>
-  <script src="/assets/js/perfil.js?v=20261107-portal-restauracion-simple-v4"></script>
+  <script src="/shared/js/cupissa-auth.js?v=20261108-otp-universal-v4"></script>
+  <script src="/assets/js/perfil.js?v=20261108-nota-cliente-v1"></script>
 
     <script src="/shared/js/security-console-notice.js?v=20261107-security-1"></script>
 </body>

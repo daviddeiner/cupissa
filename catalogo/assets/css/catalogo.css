@@ -1175,3 +1175,23 @@ body.profile-open #mobile-app-nav { display: flex !important; z-index: 9999; pos
 .catalog-infinite-sentinel.hidden {display:none !important;}
 #scroll-loading-msg:not(.hidden) {display:flex !important;}
 #scroll-loading-msg.hidden, #scroll-end-msg {display:none !important;}
+
+
+/* CUPISSA: selección de varias tallas por producto */
+.cupissa-size-quantity-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 12px;border:1px solid #fbcfe8;border-radius:14px;background:linear-gradient(135deg,#fff 0%,#fff7fb 100%);min-width:0}
+.cupissa-size-quantity-detail{display:flex;flex-direction:column;gap:2px;min-width:0}
+.cupissa-size-quantity-detail strong{font-size:12px;font-weight:900;color:#1e293b}
+.cupissa-size-quantity-detail small{font-size:10px;font-weight:700;color:#9d174d}
+.cupissa-size-quantity-controls{display:flex;align-items:center;gap:10px;flex-shrink:0}
+.cupissa-size-quantity-controls button{width:30px;height:30px;border-radius:10px;background:#fce7f3;color:#9d174d;font-size:18px;font-weight:900;line-height:1}
+.cupissa-size-quantity-controls button:disabled{opacity:.35;cursor:not-allowed}
+.cupissa-size-quantity-value{min-width:18px;text-align:center;font-size:13px;font-weight:900;color:#0f172a}
+.cupissa-open-full-image{position:absolute;right:12px;bottom:12px;z-index:5;display:inline-flex;align-items:center;gap:7px;padding:9px 12px;border:1px solid rgba(255,255,255,.85);border-radius:999px;background:rgba(255,255,255,.94);color:#9d174d;font-size:11px;font-weight:900;box-shadow:0 5px 18px rgba(15,23,42,.16);opacity:0;transform:translateY(4px);transition:opacity .18s ease,transform .18s ease}
+.product-modal-media .group:hover .cupissa-open-full-image,.cupissa-open-full-image:focus-visible{opacity:1;transform:translateY(0)}
+.cupissa-full-image-stage{position:relative;display:flex;flex-direction:column;align-items:center;gap:12px;max-width:96vw;max-height:94vh}
+.cupissa-full-image-close{align-self:flex-end;z-index:3}
+.cupissa-full-image{display:block;max-width:92vw;max-height:82vh;width:auto;height:auto;object-fit:contain;border-radius:12px;user-select:none}
+.cupissa-image-magnifier{display:none;position:absolute;z-index:4;width:184px;height:184px;border:3px solid #fff;border-radius:50%;box-shadow:0 5px 25px rgba(0,0,0,.45);pointer-events:none;background-repeat:no-repeat;background-color:#fff}
+.cupissa-image-magnifier.is-visible{display:block}
+.cupissa-zoom-hint{color:#fff;font-size:11px;font-weight:700;text-align:center;opacity:.82}
+@media(max-width:767px){.cupissa-open-full-image{opacity:1;transform:none;padding:8px 10px}.cupissa-image-magnifier,.cupissa-zoom-hint{display:none!important}.cupissa-size-quantity-row{padding:9px 10px}}
