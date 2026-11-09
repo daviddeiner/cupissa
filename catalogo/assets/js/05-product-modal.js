@@ -57,54 +57,98 @@ function cupissaRenderSizeQuantityRows(product = selectedProductModal) {
     const globalQuantity = document.getElementById('wrapper-modal-global-qty');
     const select = document.getElementById('opt-select-talla');
     const sizes = cupissaGetProductSizes(product);
+
     if (!container || !wrapper || !globalQuantity || !select) return;
+
     container.innerHTML = '';
+
     if (!sizes.length) {
         wrapper.classList.add('hidden');
         globalQuantity.classList.remove('hidden');
         return;
     }
+
     wrapper.classList.remove('hidden');
     globalQuantity.classList.add('hidden');
+
     const dropdown = document.createElement('details');
     dropdown.className = 'cupissa-size-dropdown';
+
     const summary = document.createElement('summary');
     summary.className = 'cupissa-size-dropdown-summary';
-    const totalSelected = cupissaGetSelectedSizeItems().reduce((sum,item)=>sum+item.cantidad,0);
-    summary.innerHTML = `<span>Seleccionar tallas y cantidades</span><span class="cupissa-size-dropdown-count">${totalSelected} seleccionadas <i class="fa-solid fa-chevron-down"></i></span>`;
+
+    const totalSelected = cupissaGetSelectedSizeItems()
+        .reduce((sum, item) => sum + item.cantidad, 0);
+
+    summary.innerHTML = `
+        <span>Seleccionar tallas y cantidades</span>
+        <span class="cupissa-size-dropdown-count">
+            ${totalSelected} seleccionadas
+            <i class="fa-solid fa-chevron-down"></i>
+        </span>
+    `;
+
     const list = document.createElement('div');
     list.className = 'cupissa-size-dropdown-list';
+
     sizes.forEach(size => {
         const name = String(size.nombre).trim();
-        const qty = Math.max(0, Number(cupissaModalSizeQuantities[name] || 0));
-        const row = document.createElement('label');
+        const qty = Math.max(
+            0,
+            Number(cupissaModalSizeQuantities[name] || 0)
+        );
+
+        const row = document.createElement('div');
         row.className = 'cupissa-size-select-row';
+        row.dataset.size = name;
+
         const info = document.createElement('span');
         info.className = 'cupissa-size-select-info';
+
         const title = document.createElement('strong');
         title.textContent = name;
+
         const extra = document.createElement('small');
-        extra.textContent = Number(size.incremento || 0) > 0 ? `+${formatCOP(Number(size.incremento || 0))} por unidad` : 'Precio estándar';
+        extra.textContent = Number(size.incremento || 0) > 0
+            ? `+${formatCOP(Number(size.incremento || 0))} por unidad`
+            : 'Precio estándar';
+
         info.append(title, extra);
-        const quantity = document.createElement('select');
-        quantity.className = 'cupissa-size-quantity-select';
-        quantity.setAttribute('aria-label', `Cantidad talla ${name}`);
-        for (let value=0; value<=100; value++) {
-            const option=document.createElement('option'); option.value=String(value); option.textContent=value===0?'0 unidades':`${value} ${value===1?'unidad':'unidades'}`;
-            quantity.appendChild(option);
-        }
-        quantity.value=String(Math.min(100,qty));
-        quantity.addEventListener('change',()=>{
-            cupissaModalSizeQuantities[name]=Number(quantity.value)||0;
-            cupissaUpdateSizeQuantitySummary();
-            const count=dropdown.querySelector('.cupissa-size-dropdown-count');
-            if(count) count.innerHTML=`${cupissaGetTotalModalQuantity()} seleccionadas <i class="fa-solid fa-chevron-down"></i>`;
-            recalculateProductPrice();
+
+        const controls = document.createElement('div');
+        controls.className = 'cupissa-size-quantity-controls';
+
+        const minus = document.createElement('button');
+        minus.type = 'button';
+        minus.textContent = '−';
+        minus.setAttribute('aria-label', `Disminuir cantidad de talla ${name}`);
+        minus.disabled = qty <= 0;
+
+        const value = document.createElement('span');
+        value.className = 'cupissa-size-quantity-value';
+        value.textContent = String(qty);
+
+        const plus = document.createElement('button');
+        plus.type = 'button';
+        plus.textContent = '+';
+        plus.setAttribute('aria-label', `Aumentar cantidad de talla ${name}`);
+
+        minus.addEventListener('click', () => {
+            cupissaChangeSizeQuantity(name, -1);
         });
-        row.append(info,quantity); list.appendChild(row);
+
+        plus.addEventListener('click', () => {
+            cupissaChangeSizeQuantity(name, 1);
+        });
+
+        controls.append(minus, value, plus);
+        row.append(info, controls);
+        list.appendChild(row);
     });
-    dropdown.append(summary,list);
+
+    dropdown.append(summary, list);
     container.appendChild(dropdown);
+
     cupissaUpdateSizeQuantitySummary();
 }
 
@@ -122,8 +166,35 @@ function cupissaUpdateSizeQuantitySummary() {
 function cupissaChangeSizeQuantity(sizeName, delta) {
     const key = String(sizeName || '').trim();
     if (!key) return;
-    cupissaModalSizeQuantities[key] = Math.max(0, Number(cupissaModalSizeQuantities[key] || 0) + Number(delta || 0));
-    cupissaRenderSizeQuantityRows();
+
+    const current = Math.max(
+        0,
+        Number(cupissaModalSizeQuantities[key] || 0)
+    );
+
+    cupissaModalSizeQuantities[key] = Math.max(
+        0,
+        current + Number(delta || 0)
+    );
+
+    const row = Array.from(
+        document.querySelectorAll('.cupissa-size-select-row')
+    ).find(item => item.dataset.size === key);
+
+    if (row) {
+        const value = row.querySelector('.cupissa-size-quantity-value');
+        const buttons = row.querySelectorAll('.cupissa-size-quantity-controls button');
+
+        if (value) {
+            value.textContent = String(cupissaModalSizeQuantities[key]);
+        }
+
+        if (buttons.length) {
+            buttons[0].disabled = cupissaModalSizeQuantities[key] <= 0;
+        }
+    }
+
+    cupissaUpdateSizeQuantitySummary();
     recalculateProductPrice();
 }
 

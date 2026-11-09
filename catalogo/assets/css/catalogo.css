@@ -1208,7 +1208,6 @@ body.profile-open #mobile-app-nav { display: flex !important; z-index: 9999; pos
 .cupissa-size-select-info{display:flex;flex-direction:column;gap:2px;min-width:0}
 .cupissa-size-select-info strong{font-size:11px;font-weight:900;color:#1e293b}
 .cupissa-size-select-info small{font-size:9px;color:#9d174d;font-weight:700}
-.cupissa-size-quantity-select{width:112px;max-width:42%;padding:7px 8px;border:1px solid #f1c6db;border-radius:9px;background:#fff;font-size:11px;font-weight:800;color:#831843}
 #opt-size-quantities{display:block!important}
 
 @media(max-width:767px){
