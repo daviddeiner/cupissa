@@ -1,5 +1,5 @@
 /* CUPISSA | PWA Service Worker. Versionar esta constante cuando se publiquen cambios. */
-const CUPISSA_CACHE = 'cupissa-app-shell-20261109-domicilios-correo-v6';
+const CUPISSA_CACHE = 'cupissa-app-shell-20261109-destacados-inicial-v7';
 const CUPISSA_CACHE_PREFIX = 'cupissa-app-shell-';
 const CUPISSA_ASSETS = [
   'index.html',
@@ -22,7 +22,7 @@ const CUPISSA_ASSETS = [
   'catalogo/assets/js/00-config-state.js?v=20261107-banner20-auto5-v1',
   'catalogo/assets/js/01-initialization.js?v=20261109-batch100-auto10-v4',
   'catalogo/assets/js/01-tailwind-config.js',
-  'catalogo/assets/js/02-product-data.js?v=20261109-mezcla-total-v5',
+  'catalogo/assets/js/02-product-data.js?v=20261109-destacados-inicial-v7',
   'catalogo/assets/js/03-filters-search.js?v=20261107-banner20-auto5-v1',
   'catalogo/assets/js/04-product-grid.js?v=20261109-append-grid-v3',
   'catalogo/assets/js/05-product-modal.js?v=20261108-tallas-multiples-zoom-v1',

@@ -19,6 +19,26 @@ function shuffleArray(array) {
             'JUGUETES', 'CALZADO', 'PAPELERÍA', 'FERRETERÍA', 'OTROS'
         ];
         let catalogInitialWorldsPending = true;
+
+        // Garantiza que la selección del administrador esté disponible en la
+        // primera carga, independientemente de la página aleatoria consultada.
+        async function fetchInitialFeaturedSeasonRows() {
+            const season = String(configuredFeaturedSeason || '').trim();
+            if (!season || !hasFeaturedSeasonConfiguration) return [];
+            const base = () => supabaseClient.from('productos')
+                .select(CUPISSA_CATALOG_PRODUCT_FIELDS).eq('oculto', false);
+            const [single, multiple] = await Promise.all([
+                base().ilike('temporada', season).limit(5),
+                base().contains('temporadas', [season]).limit(5)
+            ]);
+            if (single.error) console.warn('Temporada singular:', single.error);
+            if (multiple.error) console.warn('Temporadas múltiples:', multiple.error);
+            const unique = new Map();
+            [...(single.data || []), ...(multiple.data || [])].forEach(row => {
+                if (row?.id != null) unique.set(String(row.id), row);
+            });
+            return shuffleArray([...unique.values()]).slice(0, 5);
+        }
         let catalogRealtimeChannel = null;
         const catalogRealtimeQueue = [];
 
@@ -94,14 +114,21 @@ function shuffleArray(array) {
                         return (!response.error && response.data?.length) ? response.data[0] : null;
                     }));
                     const representatives = worldRows.filter(Boolean);
+                    const featuredRows = await fetchInitialFeaturedSeasonRows();
                     // Mostrar los representantes desde la primera pantalla, no esperar
                     // a que la carga automática complete los primeros 10 elementos.
-                    displayLimit = Math.max(displayLimit, representatives.length);
-                    const initialSeen = new Set(representatives.map(row => String(row.id)));
+                    displayLimit = Math.max(displayLimit, representatives.length + featuredRows.length);
+                    // Reservar siempre los cinco espacios de destacados y uno
+                    // por mundo antes de completar el grupo con productos aleatorios.
+                    const reserved = new Map();
+                    [...featuredRows, ...shuffleArray(representatives)].forEach(row => {
+                        if (row?.id != null) reserved.set(String(row.id), row);
+                    });
+                    const rest = shuffleArray(rows.filter(row => !reserved.has(String(row.id))));
                     selectedRows = shuffleArray([
-                        ...representatives,
-                        ...rows.filter(row => !initialSeen.has(String(row.id)))
-                    ].slice(0, CUPISSA_CATALOG_PAGE_SIZE));
+                        ...reserved.values(),
+                        ...rest.slice(0, Math.max(0, CUPISSA_CATALOG_PAGE_SIZE - reserved.size))
+                    ]);
                 }
                 const uniqueBatch = selectedRows
                     .filter(row => row?.id != null && !catalogLoadedProductIds.has(String(row.id)))
