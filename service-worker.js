@@ -1,5 +1,5 @@
 /* CUPISSA | PWA Service Worker. Versionar esta constante cuando se publiquen cambios. */
-const CUPISSA_CACHE = 'cupissa-app-shell-20261109-batch200-diversidad-v1';
+const CUPISSA_CACHE = 'cupissa-app-shell-20261109-slow-network-v1';
 const CUPISSA_CACHE_PREFIX = 'cupissa-app-shell-';
 const CUPISSA_ASSETS = [
   'index.html',
@@ -83,15 +83,28 @@ self.addEventListener('install', event => {
       }
     }
 
-    await Promise.all(CUPISSA_ASSETS.map(async path => {
+    // Precache limitado: la instalación no debe competir con el catálogo por
+    // decenas de conexiones en redes 2G. Los demás recursos se cachean al usarse.
+    const criticalPaths = [
+      'catalogo/',
+      'catalogo/assets/css/catalogo.css?v=20261109-tallas-dropdown-scroll-v3',
+      'catalogo/assets/css/ficha-producto-movil.css?v=20261109-variantes-compactas-v3',
+      'catalogo/assets/images/logo.png',
+      'catalogo/assets/js/00-config-state.js?v=20261109-scroll-10-v2',
+      'catalogo/assets/js/01-initialization.js?v=20261109-batch200-diversidad-v1',
+      'catalogo/assets/js/02-product-data.js?v=20261109-batch200-diversidad-v1',
+      'catalogo/assets/js/04-product-grid.js?v=20261109-append-grid-v3'
+    ];
+    // No bloquear la primera instalación con una precarga masiva.
+    for (const path of criticalPaths) {
       const url = new URL(path, self.registration.scope);
       try {
+        const existing = await cache.match(url);
+        if (existing) continue;
         const response = await fetch(new Request(url, { cache: 'no-cache' }));
-        if (response && response.ok) await cache.put(url, response);
-      } catch (_) {
-        // Si no hay conexión, se conserva la versión previamente almacenada.
-      }
-    }));
+        if (response.ok) await cache.put(url, response);
+      } catch (_) { /* Conserva la caché anterior cuando no hay red. */ }
+    }
 
     // Primera instalación: activar de inmediato. Actualizaciones: esperar al botón del usuario.
     if (!self.registration.active) await self.skipWaiting();
@@ -122,37 +135,59 @@ self.addEventListener('fetch', event => {
   if (url.origin !== self.location.origin) return;
   if (url.pathname.includes('/rest/v1/') || url.pathname.includes('/storage/v1/') || url.pathname.includes('/functions/v1/')) return;
 
+  // Catálogo: mostrar inmediatamente el HTML guardado y actualizarlo sin
+  // bloquear la navegación. Se conserva el shell anterior sin conexión.
+  if (request.mode === 'navigate' && /^\/catalogo\/(?:index\.html)?$/.test(url.pathname)) {
+    event.respondWith((async () => {
+      const cache = await caches.open(CUPISSA_CACHE);
+      const cached = await cache.match(request, { ignoreSearch: true })
+        || await caches.match(request, { ignoreSearch: true });
+      const refresh = fetch(request).then(response => {
+        if (response.ok) cache.put(request, response.clone()).catch(() => {});
+        return response;
+      });
+      if (cached) {
+        event.waitUntil(refresh.catch(() => {}));
+        return cached;
+      }
+      return refresh.catch(() => caches.match(new URL('catalogo/', self.registration.scope)));
+    })());
+    return;
+  }
+
   if (request.mode === 'navigate') {
     event.respondWith((async () => {
+      const cache = await caches.open(CUPISSA_CACHE);
       try {
         const response = await fetch(request);
-        if (response && response.ok) {
-          const cache = await caches.open(CUPISSA_CACHE);
-          await cache.put(request, response.clone());
-        }
+        if (response && response.ok) await cache.put(request, response.clone());
         return response;
       } catch (_) {
-        const cached = await caches.match(request);
-        return cached || caches.match(new URL('index.html', self.registration.scope));
+        return (await caches.match(request))
+          || (await caches.match(new URL('index.html', self.registration.scope)))
+          || Response.error();
       }
     })());
     return;
   }
 
-  // Los scripts y estilos se consultan primero en red. Así, una versión antigua
-  // del checkout no puede quedarse activa por una entrada cache-first anterior.
+  // Recursos versionados del catálogo: respuesta inmediata desde caché,
+  // refresco no bloqueante. Recursos críticos no versionados y pagos:
+  // red primero para no inmovilizar versiones de lógica sensible.
   if (request.destination === 'script' || request.destination === 'style') {
+    const versionedCatalog = url.pathname.startsWith('/catalogo/') && url.searchParams.has('v');
     event.respondWith((async () => {
-      try {
-        const response = await fetch(request);
-        if (response && response.ok) {
-          const cache = await caches.open(CUPISSA_CACHE);
-          await cache.put(request, response.clone());
-        }
+      const cache = await caches.open(CUPISSA_CACHE);
+      const cached = await cache.match(request) || await caches.match(request);
+      const refresh = fetch(request).then(response => {
+        if (response.ok) cache.put(request, response.clone()).catch(() => {});
         return response;
-      } catch (_) {
-        return (await caches.match(request)) || Response.error();
+      });
+      if (cached && versionedCatalog) {
+        event.waitUntil(refresh.catch(() => {}));
+        return cached;
       }
+      return refresh.catch(() => cached || Response.error());
     })());
     return;
   }
