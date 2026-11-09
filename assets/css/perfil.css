@@ -29,3 +29,12 @@
 .profile-embedded .profile-topbar { display:flex; position:sticky; top:0; z-index:30; }
 .profile-embedded .profile-topbar > a { display:none; }
 .profile-embedded .profile-back-button { display:inline-flex; }
+
+
+/* Nota visible del equipo CUPISSA en el historial del cliente. */
+.profile-order-sticky-note{position:relative;max-width:100%;padding:12px 14px 13px 16px;border:1px solid #f4d58a;border-radius:14px;background:linear-gradient(135deg,#fff9e8 0%,#fff3ce 100%);box-shadow:0 5px 14px rgba(146,104,22,.08);color:#72521a;overflow-wrap:anywhere}
+.profile-order-sticky-note:before{content:"";position:absolute;left:0;top:10px;bottom:10px;width:3px;border-radius:0 4px 4px 0;background:#e9b949}
+.profile-order-sticky-note>span{display:flex;align-items:center;gap:7px;margin-bottom:6px;color:#966b18;font-size:9px;font-weight:900;letter-spacing:.09em;text-transform:uppercase}
+.profile-order-sticky-note p{margin:0;color:#624b24;font-size:12px;line-height:1.6;white-space:pre-wrap}
+.profile-order-sticky-note-detail{padding:15px 17px}
+.profile-order-sticky-note-detail p{font-size:13px}

@@ -1,125 +1,142 @@
 /**
- * CUPISSA | Catálogo / filtros y buscador inteligente
- * Código extraído de la versión original sin cambiar la lógica.
+ * CUPISSA | Catálogo / filtros encadenados y buscador inteligente
+ * Mundos permanecen visibles. La selección avanza: Temporada > Categoría > Subcategoría.
  */
 
+function cupissaFilterValues(product, plural, singular) {
+    const source = Array.isArray(product?.[plural]) && product[plural].length
+        ? product[plural]
+        : [product?.[singular]];
+    return source
+        .map(value => String(value ?? '').trim().toUpperCase())
+        .filter(Boolean);
+}
+
+function cupissaProductsForActiveSeason() {
+    return rawProducts.filter(product => {
+        const worldMatch = activeMundo === 'TODOS' || cupissaFilterValues(product, 'mundos', 'mundo').includes(String(activeMundo).toUpperCase());
+        const seasonMatch = activeTemporada === 'TODAS' || cupissaFilterValues(product, 'temporadas', 'temporada').includes(String(activeTemporada).toUpperCase());
+        return worldMatch && seasonMatch;
+    });
+}
+
+function cupissaBuildFilterButton(container, label, id, active, callback, baseClass, activeClass) {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.id = id;
+    button.className = active ? activeClass : baseClass;
+    button.textContent = label;
+    button.onclick = callback;
+    container.appendChild(button);
+    return button;
+}
+
 function renderFilters() {
-            const mundosSet = new Set();
-            const temporadasSet = new Set();
-            const categoriasSet = new Set();
-            const subcategoriasSet = new Set();
+    const worldContainer = document.getElementById('mundos-container');
+    const mobileWorldContainer = document.getElementById('mobile-mundos-container');
+    const seasonContainer = document.getElementById('temporadas-container');
+    const categoryContainer = document.getElementById('categorias-container');
+    const subcategoryContainer = document.getElementById('subcategorias-container');
+    const categorySection = document.getElementById('category-filter-section');
+    const subcategorySection = document.getElementById('subcategory-filter-section');
+    if (!worldContainer || !seasonContainer || !categoryContainer || !subcategoryContainer) return;
 
-            rawProducts.forEach(p => {
-                (p.mundos?.length ? p.mundos : [p.mundo]).filter(Boolean).forEach(value => mundosSet.add(value));
-                (p.temporadas?.length ? p.temporadas : [p.temporada]).filter(Boolean).forEach(value => temporadasSet.add(value));
-                (p.categorias?.length ? p.categorias : [p.categoria]).filter(Boolean).forEach(value => categoriasSet.add(value));
-                (p.subcategorias?.length ? p.subcategorias : [p.subcategoria]).filter(Boolean).forEach(value => subcategoriasSet.add(value));
-            });
+    const baseWorld = 'px-2.5 py-1 sm:px-4 sm:py-2 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-600 bg-slate-100 hover:bg-slate-200 transition-all shrink-0';
+    const activeWorld = 'px-2.5 py-1 sm:px-4 sm:py-2 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-wider transition-all bg-pink-600 text-white shrink-0 shadow-sm';
+    const base = 'px-2 py-1 sm:px-3 sm:py-1.5 rounded-md sm:rounded-lg font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-all shrink-0';
+    const active = 'px-2 py-1 sm:px-3 sm:py-1.5 rounded-md sm:rounded-lg font-black text-white bg-pink-600 shadow-sm transition-all shrink-0';
+    const worlds = new Set();
+    rawProducts.forEach(product => cupissaFilterValues(product, 'mundos', 'mundo').forEach(value => worlds.add(value)));
 
-            const mundosContainer = document.getElementById('mundos-container');
-            const btnTodos = document.getElementById('btn-mundo-todos');
-            mundosContainer.innerHTML = '';
-            mundosContainer.appendChild(btnTodos);
+    // Los mundos se muestran arriba en escritorio y también dentro del panel móvil.
+    [worldContainer, mobileWorldContainer].filter(Boolean).forEach((container, index) => {
+        container.innerHTML = '';
+        cupissaBuildFilterButton(container, 'Todos los mundos', `btn-mundo-todos-${index}`, activeMundo === 'TODOS', () => filterByMundo('TODOS'), baseWorld, activeWorld);
+        [...worlds].sort((a,b) => a.localeCompare(b,'es')).forEach(world =>
+            cupissaBuildFilterButton(container, world, `btn-mundo-${index}-${world}`, activeMundo === world, () => filterByMundo(world), baseWorld, activeWorld));
+    });
 
-            Array.from(mundosSet).sort().forEach(mundo => {
-                const btn = document.createElement('button');
-                btn.onclick = () => filterByMundo(mundo);
-                btn.id = `btn-mundo-${mundo}`;
-                btn.className = "px-2.5 py-1 sm:px-4 sm:py-2 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-600 bg-slate-100 hover:bg-slate-200 transition-all shrink-0 flex items-center space-x-1 sm:space-x-1.5";
-                btn.innerHTML = `<i class="fa-solid fa-folder text-[9px] sm:text-[10px] text-pink-500"></i><span>${mundo}</span>`;
-                mundosContainer.appendChild(btn);
-            });
+    const worldProducts = activeMundo === 'TODOS' ? rawProducts : rawProducts.filter(product =>
+        cupissaFilterValues(product, 'mundos', 'mundo').includes(String(activeMundo).toUpperCase()));
 
-            const tempContainer = document.getElementById('temporadas-container');
-            const btnTodasTemp = document.getElementById('btn-temp-todas');
-            tempContainer.innerHTML = '';
-            tempContainer.appendChild(btnTodasTemp);
+    // Categorías inmediatamente debajo del mundo seleccionado.
+    const categories = new Set();
+    worldProducts.forEach(product => cupissaFilterValues(product, 'categorias', 'categoria').forEach(value => categories.add(value)));
+    if (categorySection) categorySection.hidden = activeMundo === 'TODOS' || categories.size === 0;
+    const categoryTitle = document.getElementById('category-filter-title');
+    if (categoryTitle) categoryTitle.textContent = activeMundo === 'TODOS' ? 'Categorías disponibles' : `Categorías de ${activeMundo}`;
+    categoryContainer.innerHTML = '';
+    cupissaBuildFilterButton(categoryContainer, 'Todas las categorías', 'btn-cat-todas', activeCategoria === 'TODAS', () => filterByCategoria('TODAS'), base, active);
+    [...categories].sort((a,b) => a.localeCompare(b,'es')).forEach(category =>
+        cupissaBuildFilterButton(categoryContainer, category, `btn-cat-${category}`, activeCategoria === category, () => filterByCategoria(category), base, active));
 
-            Array.from(temporadasSet).sort().forEach(temp => {
-                const btn = document.createElement('button');
-                btn.onclick = () => filterByTemporada(temp);
-                btn.id = `btn-temp-${temp}`;
-                btn.className = "px-2 py-1 sm:px-3 sm:py-1.5 rounded-md sm:rounded-lg font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-all shrink-0";
-                btn.innerText = temp;
-                tempContainer.appendChild(btn);
-            });
+    // Subcategorías debajo de la categoría específica elegida.
+    const selectedCategoryProducts = activeCategoria === 'TODAS' ? [] : worldProducts.filter(product =>
+        cupissaFilterValues(product, 'categorias', 'categoria').includes(String(activeCategoria).toUpperCase()));
+    const subcategories = new Set();
+    selectedCategoryProducts.forEach(product => cupissaFilterValues(product, 'subcategorias', 'subcategoria').forEach(value => subcategories.add(value)));
+    if (subcategorySection) subcategorySection.hidden = activeCategoria === 'TODAS' || subcategories.size === 0;
+    const subcategoryTitle = document.getElementById('subcategory-filter-title');
+    if (subcategoryTitle) subcategoryTitle.textContent = `Subcategorías de ${activeCategoria}`;
+    subcategoryContainer.innerHTML = '';
+    cupissaBuildFilterButton(subcategoryContainer, 'Todas las subcategorías', 'btn-subcat-todas', activeSubcategoria === 'TODAS', () => filterBySubcategoria('TODAS'), base, active);
+    [...subcategories].sort((a,b) => a.localeCompare(b,'es')).forEach(subcategory =>
+        cupissaBuildFilterButton(subcategoryContainer, subcategory, `btn-subcat-${subcategory}`, activeSubcategoria === subcategory, () => filterBySubcategoria(subcategory), base, active));
 
-            const catContainer = document.getElementById('categorias-container');
-            const btnTodasCat = document.getElementById('btn-cat-todas');
-            catContainer.innerHTML = '';
-            catContainer.appendChild(btnTodasCat);
+    // Temporadas quedan como filtro independiente, al final del panel.
+    const seasons = new Set();
+    rawProducts.forEach(product => cupissaFilterValues(product, 'temporadas', 'temporada').forEach(value => seasons.add(value)));
+    seasonContainer.innerHTML = '';
+    cupissaBuildFilterButton(seasonContainer, 'Todas', 'btn-temp-todas', activeTemporada === 'TODAS', () => filterByTemporada('TODAS'), base, active);
+    [...seasons].sort((a,b) => a.localeCompare(b,'es')).forEach(season =>
+        cupissaBuildFilterButton(seasonContainer, season, `btn-temp-${season}`, activeTemporada === season, () => filterByTemporada(season), base, active));
+}
 
-            Array.from(categoriasSet).sort().forEach(cat => {
-                const btn = document.createElement('button');
-                btn.onclick = () => filterByCategoria(cat);
-                btn.id = `btn-cat-${cat}`;
-                btn.className = "px-2 py-1 sm:px-3 sm:py-1.5 rounded-md sm:rounded-lg font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-all shrink-0";
-                btn.innerText = cat;
-                catContainer.appendChild(btn);
-            });
+function cupissaScrollCatalogToTop() {
+    requestAnimationFrame(() => {
+        const catalog = document.getElementById('catalog-main');
+        if (!catalog) return;
+        const header = document.querySelector('header');
+        const headerHeight = header && getComputedStyle(header).position === 'sticky' ? header.getBoundingClientRect().height : 0;
+        const top = Math.max(0, window.scrollY + catalog.getBoundingClientRect().top - headerHeight - 8);
+        window.scrollTo({ top, behavior: 'instant' });
+    });
+}
 
-            const subcatContainer = document.getElementById('subcategorias-container');
-            const btnTodasSubcat = document.getElementById('btn-subcat-todas');
-            subcatContainer.innerHTML = '';
-            subcatContainer.appendChild(btnTodasSubcat);
+function filterByMundo(mundo) {
+    activeMundo = mundo;
+    activeCategoria = 'TODAS';
+    activeSubcategoria = 'TODAS';
+    renderFilters();
+    displayLimit = CUPISSA_PRODUCT_BATCH_SIZE;
+    applyFiltersAndSearch();
+    cupissaScrollCatalogToTop();
+}
 
-            Array.from(subcategoriasSet).sort().forEach(subcat => {
-                const btn = document.createElement('button');
-                btn.onclick = () => filterBySubcategoria(subcat);
-                btn.id = `btn-subcat-${subcat}`;
-                btn.className = "px-2 py-1 sm:px-3 sm:py-1.5 rounded-md sm:rounded-lg font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-all shrink-0";
-                btn.innerText = subcat;
-                subcatContainer.appendChild(btn);
-            });
-        }
+function filterByTemporada(temp) {
+    activeTemporada = temp;
+    displayLimit = CUPISSA_PRODUCT_BATCH_SIZE;
+    renderFilters();
+    applyFiltersAndSearch();
+    cupissaScrollCatalogToTop();
+}
 
-        function filterByMundo(mundo) {
-            activeMundo = mundo;
-            document.querySelectorAll('[id^="btn-mundo-"]').forEach(btn => {
-                btn.className = "px-2.5 py-1 sm:px-4 sm:py-2 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-600 bg-slate-100 hover:bg-slate-200 transition-all shrink-0 flex items-center space-x-1 sm:space-x-1.5";
-            });
-            const activeBtn = document.getElementById(`btn-mundo-${mundo.toString().toLowerCase() === 'todos' ? 'todos' : mundo}`);
-            if (activeBtn) activeBtn.className = "px-2.5 py-1 sm:px-4 sm:py-2 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-wider transition-all bg-pink-600 text-white flex items-center space-x-1 sm:space-x-2 shrink-0 shadow-sm";
-            
-            displayLimit = CUPISSA_PRODUCT_BATCH_SIZE;
-            applyFiltersAndSearch();
-        }
+function filterByCategoria(cat) {
+    activeCategoria = cat;
+    activeSubcategoria = 'TODAS';
+    renderFilters();
+    displayLimit = CUPISSA_PRODUCT_BATCH_SIZE;
+    applyFiltersAndSearch();
+    cupissaScrollCatalogToTop();
+}
 
-        function filterByTemporada(temp) {
-            activeTemporada = temp;
-            document.querySelectorAll('[id^="btn-temp-"]').forEach(btn => {
-                btn.className = "px-2 py-1 sm:px-3 sm:py-1.5 rounded-md sm:rounded-lg font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-all shrink-0";
-            });
-            const activeBtn = document.getElementById(`btn-temp-${temp.toString().toLowerCase() === 'todas' ? 'todas' : temp}`);
-            if (activeBtn) activeBtn.className = "px-2 py-1 sm:px-3 sm:py-1.5 rounded-md sm:rounded-lg font-black text-white bg-pink-600 shadow-sm transition-all shrink-0";
-            
-            displayLimit = CUPISSA_PRODUCT_BATCH_SIZE;
-            applyFiltersAndSearch();
-        }
-
-        function filterByCategoria(cat) {
-            activeCategoria = cat;
-            document.querySelectorAll('[id^="btn-cat-"]').forEach(btn => {
-                btn.className = "px-2 py-1 sm:px-3 sm:py-1.5 rounded-md sm:rounded-lg font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-all shrink-0";
-            });
-            const activeBtn = document.getElementById(`btn-cat-${cat.toString().toLowerCase() === 'todas' ? 'todas' : cat}`);
-            if (activeBtn) activeBtn.className = "px-2 py-1 sm:px-3 sm:py-1.5 rounded-md sm:rounded-lg font-black text-white bg-pink-600 shadow-sm transition-all shrink-0";
-            
-            displayLimit = CUPISSA_PRODUCT_BATCH_SIZE;
-            applyFiltersAndSearch();
-        }
-
-        function filterBySubcategoria(subcat) {
-            activeSubcategoria = subcat;
-            document.querySelectorAll('[id^="btn-subcat-"]').forEach(btn => {
-                btn.className = "px-2 py-1 sm:px-3 sm:py-1.5 rounded-md sm:rounded-lg font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-all shrink-0";
-            });
-            const activeBtn = document.getElementById(`btn-subcat-${subcat.toString().toLowerCase() === 'todas' ? 'todas' : subcat}`);
-            if (activeBtn) activeBtn.className = "px-2 py-1 sm:px-3 sm:py-1.5 rounded-md sm:rounded-lg font-black text-white bg-pink-600 shadow-sm transition-all shrink-0";
-            
-            displayLimit = CUPISSA_PRODUCT_BATCH_SIZE;
-            applyFiltersAndSearch();
-        }
+function filterBySubcategoria(subcat) {
+    activeSubcategoria = subcat;
+    displayLimit = CUPISSA_PRODUCT_BATCH_SIZE;
+    renderFilters();
+    applyFiltersAndSearch();
+    cupissaScrollCatalogToTop();
+}
 
         function handleSmartSearch() {
             displayLimit = CUPISSA_PRODUCT_BATCH_SIZE;
@@ -128,15 +145,7 @@ function renderFilters() {
                 applyFiltersAndSearch();
                 // Al buscar, presentar inmediatamente el inicio de los resultados.
                 // No quitar el foco del campo ni alterar filtros, productos o paginación.
-                window.requestAnimationFrame(() => {
-                    const catalog = document.getElementById('catalog-main');
-                    if (!catalog) return;
-                    const header = document.querySelector('header');
-                    const headerHeight = header && getComputedStyle(header).position === 'sticky'
-                        ? header.getBoundingClientRect().height : 0;
-                    const top = Math.max(0, window.scrollY + catalog.getBoundingClientRect().top - headerHeight - 8);
-                    window.scrollTo({ top, behavior: 'instant' });
-                });
+                cupissaScrollCatalogToTop();
             }, 90);
         }
 

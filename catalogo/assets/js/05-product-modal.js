@@ -27,8 +27,104 @@ function cupissaSelectColorForPhoto(product, photo) {
     );
     if (option) {
         select.value = option.value;
-        recalculateProductPrice();
+        select.dispatchEvent(new Event('change', { bubbles: true }));
     }
+}
+
+
+let cupissaModalSizeQuantities = {};
+
+function cupissaGetProductSizes(product = selectedProductModal) {
+    return Array.isArray(product?.tallas) ? product.tallas.filter(size => size && String(size.nombre || '').trim()) : [];
+}
+
+function cupissaGetSelectedSizeItems() {
+    return cupissaGetProductSizes().map(size => ({
+        talla: String(size.nombre).trim(),
+        cantidad: Math.max(0, Number(cupissaModalSizeQuantities[String(size.nombre).trim()] || 0)),
+        incremento: Math.max(0, Number(size.incremento || 0))
+    })).filter(item => item.cantidad > 0);
+}
+
+function cupissaGetTotalModalQuantity() {
+    const sizeItems = cupissaGetSelectedSizeItems();
+    return sizeItems.length ? sizeItems.reduce((total, item) => total + item.cantidad, 0) : Math.max(1, Number(selectedQtyModal || 1));
+}
+
+function cupissaRenderSizeQuantityRows(product = selectedProductModal) {
+    const container = document.getElementById('opt-size-quantities');
+    const wrapper = document.getElementById('wrapper-tallas');
+    const globalQuantity = document.getElementById('wrapper-modal-global-qty');
+    const select = document.getElementById('opt-select-talla');
+    const sizes = cupissaGetProductSizes(product);
+    if (!container || !wrapper || !globalQuantity || !select) return;
+    container.innerHTML = '';
+    if (!sizes.length) {
+        wrapper.classList.add('hidden');
+        globalQuantity.classList.remove('hidden');
+        return;
+    }
+    wrapper.classList.remove('hidden');
+    globalQuantity.classList.add('hidden');
+    const dropdown = document.createElement('details');
+    dropdown.className = 'cupissa-size-dropdown';
+    const summary = document.createElement('summary');
+    summary.className = 'cupissa-size-dropdown-summary';
+    const totalSelected = cupissaGetSelectedSizeItems().reduce((sum,item)=>sum+item.cantidad,0);
+    summary.innerHTML = `<span>Seleccionar tallas y cantidades</span><span class="cupissa-size-dropdown-count">${totalSelected} seleccionadas <i class="fa-solid fa-chevron-down"></i></span>`;
+    const list = document.createElement('div');
+    list.className = 'cupissa-size-dropdown-list';
+    sizes.forEach(size => {
+        const name = String(size.nombre).trim();
+        const qty = Math.max(0, Number(cupissaModalSizeQuantities[name] || 0));
+        const row = document.createElement('label');
+        row.className = 'cupissa-size-select-row';
+        const info = document.createElement('span');
+        info.className = 'cupissa-size-select-info';
+        const title = document.createElement('strong');
+        title.textContent = name;
+        const extra = document.createElement('small');
+        extra.textContent = Number(size.incremento || 0) > 0 ? `+${formatCOP(Number(size.incremento || 0))} por unidad` : 'Precio estándar';
+        info.append(title, extra);
+        const quantity = document.createElement('select');
+        quantity.className = 'cupissa-size-quantity-select';
+        quantity.setAttribute('aria-label', `Cantidad talla ${name}`);
+        for (let value=0; value<=100; value++) {
+            const option=document.createElement('option'); option.value=String(value); option.textContent=value===0?'0 unidades':`${value} ${value===1?'unidad':'unidades'}`;
+            quantity.appendChild(option);
+        }
+        quantity.value=String(Math.min(100,qty));
+        quantity.addEventListener('change',()=>{
+            cupissaModalSizeQuantities[name]=Number(quantity.value)||0;
+            cupissaUpdateSizeQuantitySummary();
+            const count=dropdown.querySelector('.cupissa-size-dropdown-count');
+            if(count) count.innerHTML=`${cupissaGetTotalModalQuantity()} seleccionadas <i class="fa-solid fa-chevron-down"></i>`;
+            recalculateProductPrice();
+        });
+        row.append(info,quantity); list.appendChild(row);
+    });
+    dropdown.append(summary,list);
+    container.appendChild(dropdown);
+    cupissaUpdateSizeQuantitySummary();
+}
+
+function cupissaUpdateSizeQuantitySummary() {
+    const summary = document.getElementById('opt-size-quantity-summary');
+    const total = cupissaGetSelectedSizeItems().reduce((sum, item) => sum + item.cantidad, 0);
+    selectedQtyModal = total || 0;
+    const qtyLabel = document.getElementById('opt-modal-qty');
+    if (qtyLabel) qtyLabel.textContent = String(total);
+    if (summary) summary.textContent = total > 0 ? `${total} unidad${total === 1 ? '' : 'es'} en total, sumando todas las tallas.` : 'Selecciona al menos una unidad para continuar.';
+    const dropdownCount = document.querySelector('#opt-size-quantities .cupissa-size-dropdown-count');
+    if (dropdownCount) dropdownCount.innerHTML = `${total} seleccionadas <i class="fa-solid fa-chevron-down"></i>`;
+}
+
+function cupissaChangeSizeQuantity(sizeName, delta) {
+    const key = String(sizeName || '').trim();
+    if (!key) return;
+    cupissaModalSizeQuantities[key] = Math.max(0, Number(cupissaModalSizeQuantities[key] || 0) + Number(delta || 0));
+    cupissaRenderSizeQuantityRows();
+    recalculateProductPrice();
 }
 
 function openOptionsModal(prodId) {
@@ -36,12 +132,14 @@ function openOptionsModal(prodId) {
             if (!prod) return;
 
             selectedProductModal = prod;
+            if (typeof window.syncCupissaFavoriteButtons === 'function') window.syncCupissaFavoriteButtons();
             if (typeof window.registerCupissaProductOpen === 'function') {
                 window.registerCupissaProductOpen(prod.id);
             }
             const permalink = document.getElementById('cupissa-product-permalink');
             if (permalink) permalink.href = `/producto/${encodeURIComponent(String(prod.id))}/`;
             selectedQtyModal = 1;
+            cupissaModalSizeQuantities = {};
             activePhotoIndex = 0;
 
             const wrapperModalidad = document.getElementById('wrapper-modalidad');
@@ -56,6 +154,18 @@ function openOptionsModal(prodId) {
             updateModalidadUI();
 
             document.getElementById('opt-modal-title').innerText = prod.nombre;
+            const creditLink = document.getElementById('cupissa-credit-whatsapp');
+            if (creditLink) {
+                const message = `Hola, quiero solicitar información para pedir a crédito este producto: ${prod.nombre}. Ref: CUP-${String(prod.id).slice(-4)}. ¿Me pueden ayudar?`;
+                creditLink.href = `https://wa.me/573147671380?text=${encodeURIComponent(message)}`;
+            }
+            const wholesaleHint = document.getElementById('opt-wholesale-hint');
+            if (wholesaleHint) {
+                const minimum = Math.max(0, Number(prod.cant_min_mayorista || 0));
+                wholesaleHint.textContent = minimum > 0
+                    ? `Llévalo al por mayor a partir de ${minimum} unidades.`
+                    : 'Consulta disponibilidad y condiciones para compras al por mayor.';
+            }
             document.getElementById('opt-modal-subcat').innerText = (prod.subcategorias?.length ? prod.subcategorias : (prod.categorias?.length ? prod.categorias : [prod.subcategoria || prod.categoria || 'TEXTIL'])).join(' · ');
             document.getElementById('opt-modal-ref').innerText = `Ref: CUP-${prod.id.toString().slice(-4)}`;
 
@@ -118,7 +228,10 @@ function openOptionsModal(prodId) {
                             const colors = selectedProductModal.colores || [];
                             if (colors.length === fotos.length && colors[idx]) {
                                 const select = document.getElementById('opt-select-color');
-                                if (select) { select.value = colors[idx].nombre; recalculateProductPrice(); }
+                                if (select) {
+                                    select.value = colors[idx].nombre;
+                                    select.dispatchEvent(new Event('change', { bubbles: true }));
+                                }
                             }
                         }
                     };
@@ -126,22 +239,20 @@ function openOptionsModal(prodId) {
                 });
             }
 
-            const wrapTallas = document.getElementById('wrapper-tallas');
             const selectTalla = document.getElementById('opt-select-talla');
             selectTalla.innerHTML = '';
-            if (prod.tallas && prod.tallas.length > 0) {
-                prod.tallas.forEach(t => {
-                    const opt = document.createElement('option');
-                    opt.value = t.nombre;
-                    opt.dataset.inc = t.incremento || 0;
-                    opt.innerText = t.incremento > 0 ? `${t.nombre} (+${formatCOP(t.incremento)})` : t.nombre;
-                    selectTalla.appendChild(opt);
-                });
-                wrapTallas.classList.remove('hidden');
-                if (typeof enhanceCupissaSelect === 'function') enhanceCupissaSelect(selectTalla, 'Selecciona una talla');
-            } else {
-                wrapTallas.classList.add('hidden');
-            }
+            const availableSizes = cupissaGetProductSizes(prod);
+            availableSizes.forEach((size, index) => {
+                const name = String(size.nombre).trim();
+                const opt = document.createElement('option');
+                opt.value = name;
+                opt.dataset.inc = size.incremento || 0;
+                opt.innerText = Number(size.incremento || 0) > 0 ? `${name} (+${formatCOP(size.incremento)})` : name;
+                selectTalla.appendChild(opt);
+                cupissaModalSizeQuantities[name] = 0;
+            });
+            selectTalla.value = availableSizes.length ? String(availableSizes[0].nombre).trim() : '';
+            cupissaRenderSizeQuantityRows(prod);
 
             const wrapColores = document.getElementById('wrapper-colores');
             const selectColor = document.getElementById('opt-select-color');
@@ -322,12 +433,42 @@ function cupissaSelectedAccessories() {
 
         function openFullImageModal() {
             if (!selectedProductModal) return;
-            const croppedPhotos = selectedProductModal.fotos || [];
-            const srcOriginal = croppedPhotos[activePhotoIndex] || croppedPhotos[0] || 'https://via.placeholder.com/800x800?text=Cupissa';
+            // El catálogo publica y conserva las versiones recortadas en fotos.
+            // fotos_originales se reserva para administración y nunca se usa aquí.
+            const publishedPhotos = Array.isArray(selectedProductModal.fotos) ? selectedProductModal.fotos : [];
+            const publishedPhoto = publishedPhotos[activePhotoIndex] || publishedPhotos[0] || '';
             const fullImg = document.getElementById('full-modal-img');
-            fullImg.src = srcOriginal;
+            if (!publishedPhoto || !fullImg) return;
+            fullImg.src = publishedPhoto;
             fullImg.alt = `${selectedProductModal.nombre} - CUPISSA`;
             document.getElementById('modal-full-image').classList.remove('hidden');
+            setupCupissaImageMagnifier(fullImg);
+        }
+
+        function setupCupissaImageMagnifier(image) {
+            const lens = document.getElementById('full-image-magnifier');
+            if (!image || !lens || image.dataset.cupissaMagnifierReady) return;
+            image.dataset.cupissaMagnifierReady = 'true';
+            const zoom = 2.6;
+            const update = event => {
+                if (window.matchMedia('(max-width: 767px)').matches || event.pointerType === 'touch') return;
+                const rect = image.getBoundingClientRect();
+                const stageRect = image.parentElement.getBoundingClientRect();
+                if (!rect.width || !rect.height) return;
+                const lensSize = lens.offsetWidth || 180;
+                const x = Math.max(0, Math.min(rect.width, event.clientX - rect.left));
+                const y = Math.max(0, Math.min(rect.height, event.clientY - rect.top));
+                const left = Math.max(0, Math.min(rect.width - lensSize, x - lensSize / 2));
+                const top = Math.max(0, Math.min(rect.height - lensSize, y - lensSize / 2));
+                lens.style.left = `${rect.left - stageRect.left + left}px`;
+                lens.style.top = `${rect.top - stageRect.top + top}px`;
+                lens.style.backgroundImage = `url("${image.currentSrc || image.src}")`;
+                lens.style.backgroundSize = `${rect.width * zoom}px ${rect.height * zoom}px`;
+                lens.style.backgroundPosition = `${-(x * zoom - lensSize / 2)}px ${-(y * zoom - lensSize / 2)}px`;
+                lens.classList.add('is-visible');
+            };
+            image.addEventListener('pointermove', update);
+            image.addEventListener('pointerleave', () => lens.classList.remove('is-visible'));
         }
 
         // Reutiliza la vista ampliada del catálogo para mostrar fotografías de accesorios.
@@ -338,10 +479,12 @@ function cupissaSelectedAccessories() {
             fullImg.src = photo;
             fullImg.alt = `${accessoryName || 'Accesorio'} - CUPISSA`;
             overlay.classList.remove('hidden');
+            setupCupissaImageMagnifier(fullImg);
         }
 
         function closeFullImageModal() {
             document.getElementById('modal-full-image').classList.add('hidden');
+            document.getElementById('full-image-magnifier')?.classList.remove('is-visible');
         }
 
         function setModalidad(mod) {
@@ -378,38 +521,38 @@ function cupissaSelectedAccessories() {
         function recalculateProductPrice() {
             if (!selectedProductModal) return;
             const p = selectedProductModal;
+            const sizeItems = cupissaGetSelectedSizeItems();
+            const hasSizeOptions = cupissaGetProductSizes(p).length > 0;
+            const totalQty = hasSizeOptions ? sizeItems.reduce((sum, item) => sum + item.cantidad, 0) : Math.max(1, Number(selectedQtyModal || 1));
+            selectedQtyModal = totalQty;
+            const basePrice = selectedModalidad === 'alquiler' ? Number(p.precio_alquiler || 0) : Number(p.precio_detal || 0);
+            const isMayorista = selectedModalidad === 'venta' && Number(p.cant_min_mayorista || 0) > 0 && totalQty >= Number(p.cant_min_mayorista) && Number(p.precio_mayorista || 0) > 0;
+            const baseUnitPrice = isMayorista ? Number(p.precio_mayorista) : basePrice;
+            const selectColor = document.getElementById('opt-select-color');
+            const colorExtra = selectColor?.selectedOptions?.[0] ? Number(selectColor.selectedOptions[0].dataset.inc || 0) : 0;
+            const accessoryExtra = cupissaSelectedAccessories().reduce((sum, accessory) => sum + Number(accessory.incremento || 0), 0);
+            let totalProduct = 0;
 
-            let unitPrice = selectedModalidad === 'alquiler' ? (p.precio_alquiler || 0) : p.precio_detal;
-            let isMayorista = false;
-
-            if (selectedModalidad === 'venta' && p.cant_min_mayorista && selectedQtyModal >= p.cant_min_mayorista && p.precio_mayorista) {
-                unitPrice = p.precio_mayorista;
-                isMayorista = true;
+            if (hasSizeOptions) {
+                totalProduct = sizeItems.reduce((sum, item) => sum + (baseUnitPrice + item.incremento + colorExtra + accessoryExtra) * item.cantidad, 0);
+            } else {
+                totalProduct = (baseUnitPrice + colorExtra + accessoryExtra) * totalQty;
             }
 
-            const selectTalla = document.getElementById('opt-select-talla');
-            if (selectTalla && selectTalla.selectedOptions[0]) unitPrice += parseFloat(selectTalla.selectedOptions[0].dataset.inc || 0);
-
-            const selectColor = document.getElementById('opt-select-color');
-            if (selectColor && selectColor.selectedOptions[0]) unitPrice += parseFloat(selectColor.selectedOptions[0].dataset.inc || 0);
-
-            const selectAccesorio = document.getElementById('opt-select-accesorio');
-            unitPrice += cupissaSelectedAccessories().reduce((sum, accessory) => sum + accessory.incremento, 0);
-
-            const totalProduct = unitPrice * selectedQtyModal;
-            const pctAnticipo = p.porcentaje_anticipo || 20;
+            const pctAnticipo = Number(p.porcentaje_anticipo ?? 20);
             const valAnticipo = Math.round(totalProduct * (pctAnticipo / 100));
-
             const depInfo = document.getElementById('wrapper-deposito-info');
-            if (selectedModalidad === 'alquiler' && p.valor_deposito > 0) {
-                document.getElementById('opt-val-deposito').innerText = formatCOP(p.valor_deposito * selectedQtyModal);
+            if (selectedModalidad === 'alquiler' && Number(p.valor_deposito || 0) > 0) {
+                document.getElementById('opt-val-deposito').innerText = formatCOP(Number(p.valor_deposito || 0) * totalQty);
                 depInfo.classList.remove('hidden');
             } else {
                 depInfo.classList.add('hidden');
             }
 
-            document.getElementById('opt-price-tag').innerText = selectedModalidad === 'alquiler' ? 'Precio Alquiler' : (isMayorista ? 'Precio Mayorista' : 'Precio Detal');
+            const priceLabel = document.getElementById('opt-price-tag');
+            if (priceLabel) priceLabel.innerText = selectedModalidad === 'alquiler' ? 'Precio Alquiler' : (isMayorista ? 'Precio Mayorista' : 'Precio Detal');
             document.getElementById('opt-modal-total-price').innerText = formatCOP(totalProduct);
             document.getElementById('opt-anticipo-pct').innerText = pctAnticipo;
             document.getElementById('opt-anticipo-val').innerText = formatCOP(valAnticipo);
+            if (hasSizeOptions) cupissaUpdateSizeQuantitySummary();
         }

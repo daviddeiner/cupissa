@@ -13,16 +13,34 @@ function shuffleArray(array) {
 
         async function fetchCatalogProducts() {
             let allFetched = [];
-
+            const productFields = 'id,nombre,mundo,mundos,categoria,categorias,subcategoria,subcategorias,temporada,temporadas,precio_detal,precio_mayorista,cant_min_mayorista,porcentaje_anticipo,dias_preparacion,personalizable,al_por_mayor,venta,alquiler,credito,precio_alquiler,valor_deposito,tallas,colores,fotos,created_at,descripcion,accesorios,oculto';
             try {
-                const { data, error } = await supabaseClient
-                    .from('productos')
-                    .select('id,nombre,mundo,mundos,categoria,categorias,subcategoria,subcategorias,temporada,temporadas,precio_detal,precio_mayorista,cant_min_mayorista,porcentaje_anticipo,dias_preparacion,personalizable,al_por_mayor,venta,alquiler,credito,precio_alquiler,valor_deposito,tallas,colores,fotos,created_at,descripcion,accesorios,oculto')
-                    .eq('oculto', false);
-                if (error) throw error;
-                allFetched = Array.isArray(data) ? data : [];
+                // Supabase limita las filas por respuesta. Pedimos páginas de 100 en paralelo
+                // para evitar una única respuesta grande y reducir el tiempo de espera.
+                const pageSize = 100;
+                const firstPage = await supabaseClient.from('productos')
+                    .select(productFields, { count: 'exact' })
+                    .eq('oculto', false)
+                    .order('created_at', { ascending: false })
+                    .range(0, pageSize - 1);
+                if (firstPage.error) throw firstPage.error;
+                allFetched = Array.isArray(firstPage.data) ? firstPage.data : [];
+                const total = Number(firstPage.count || allFetched.length);
+                if (total > pageSize) {
+                    const pageStarts = [];
+                    for (let offset = pageSize; offset < total; offset += pageSize) pageStarts.push(offset);
+                    const pages = await Promise.all(pageStarts.map(offset => supabaseClient.from('productos')
+                        .select(productFields)
+                        .eq('oculto', false)
+                        .order('created_at', { ascending: false })
+                        .range(offset, Math.min(offset + pageSize - 1, total - 1))));
+                    for (const page of pages) {
+                        if (page.error) throw page.error;
+                        if (Array.isArray(page.data)) allFetched.push(...page.data);
+                    }
+                }
             } catch (err) {
-                console.error("Excepción en consulta de productos visibles de Supabase:", err);
+                console.error('Excepción en consulta paginada de productos visibles de Supabase:', err);
             }
 
             rawProducts = allFetched.map(normalizeProduct);
@@ -38,6 +56,7 @@ function shuffleArray(array) {
 
             renderFilters();
             applyFiltersAndSearch();
+            if (typeof setupAutomaticProductLoading === 'function') setupAutomaticProductLoading();
             updateSEOStructuredData();
             const productFromLink = new URLSearchParams(window.location.search).get('producto');
             if (productFromLink && rawProducts.some(product => String(product.id) === productFromLink)) {

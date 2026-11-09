@@ -21,6 +21,7 @@ function openFavoritesModal() {
             } else {
                 favorites.forEach(prod => {
                     const foto = prod.fotos && prod.fotos[0] ? prod.fotos[0] : '';
+                    const isFav = favorites.some(item => String(item.id) === String(prod.id));
                     const card = document.createElement('div');
                     card.className = "flex items-center justify-between bg-slate-50 p-3 rounded-2xl border border-slate-100 text-xs";
                     card.innerHTML = `
@@ -31,7 +32,10 @@ function openFavoritesModal() {
                                 <span class="font-black fuchsia-text">${formatCOP(prod.precio_detal)}</span>
                             </div>
                         </div>
-                        <button onclick="openOptionsModal('${prod.id}'); closeFavoritesModal();" class="px-3 py-1.5 fuchsia-btn font-bold rounded-xl text-[11px]">Ver Op.</button>
+                        <div class="flex items-center gap-2">
+                            <button type="button" data-favorite-product-id="${String(prod.id)}" onclick="toggleFavorite('${prod.id}', event); openFavoritesModal();" class="w-8 h-8 rounded-full bg-white text-pink-600 border border-pink-100" aria-label="Quitar de favoritos" aria-pressed="${isFav}"><i class="${isFav ? 'fa-solid' : 'fa-regular'} fa-heart"></i></button>
+                            <button onclick="openOptionsModal('${prod.id}'); closeFavoritesModal();" class="px-3 py-1.5 fuchsia-btn font-bold rounded-xl text-[11px]">Ver Op.</button>
+                        </div>
                     `;
                     container.appendChild(card);
                 });

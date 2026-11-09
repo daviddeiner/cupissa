@@ -45,7 +45,7 @@ function catalogProductCard(prod, options = {}) {
         <div>
             <div class="relative bg-slate-50 overflow-hidden flex items-center justify-center">
                 <img src="${mainFoto}" alt="${seoImageAlt}" title="${seoImageAlt}" loading="lazy" class="product-card-photo block w-full h-auto max-h-[380px] object-contain transition-transform duration-300">
-                <button data-card-ignore-open type="button" onclick="toggleFavorite('${prod.id}', event)" class="absolute top-2 right-2 sm:top-3 sm:right-3 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white/80 backdrop-blur-md text-slate-400 hover:text-pink-600 flex items-center justify-center transition-colors shadow-sm" aria-label="Agregar a favoritos">
+                <button data-card-ignore-open type="button" onclick="toggleFavorite('${prod.id}', event)" class="absolute top-2 right-2 sm:top-3 sm:right-3 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white/80 backdrop-blur-md text-slate-400 hover:text-pink-600 flex items-center justify-center transition-colors shadow-sm" data-favorite-product-id="${String(prod.id)}" aria-label="Agregar a favoritos" aria-pressed="${isFav}">
                     <i class="${isFav ? 'fa-solid fa-heart text-pink-600 text-xs sm:text-sm' : 'fa-regular fa-heart text-xs sm:text-sm'}"></i>
                 </button>
             </div>

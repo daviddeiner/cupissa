@@ -4,60 +4,78 @@
  */
 
 function addModalProductToCart() {
-            if (!selectedProductModal) return;
+    if (!selectedProductModal) return;
 
-            const selectTalla = document.getElementById('opt-select-talla');
-            const selectColor = document.getElementById('opt-select-color');
-            const inputCustom = document.getElementById('opt-input-custom');
-            const selectAccesorio = document.getElementById('opt-select-accesorio');
+    const selectTalla = document.getElementById('opt-select-talla');
+    const selectColor = document.getElementById('opt-select-color');
+    const inputCustom = document.getElementById('opt-input-custom');
+    const customText = inputCustom ? inputCustom.value.trim() : '';
+    const accesoriosElegidos = typeof cupissaSelectedAccessories === 'function' ? cupissaSelectedAccessories() : [];
+    const accesorio = accesoriosElegidos.map(item => item.nombre).join(', ') || null;
+    const accesorioFoto = accesoriosElegidos[0]?.foto || '';
+    const color = selectColor?.value || null;
+    const colorFoto = selectColor?.selectedOptions?.[0]?.dataset.photo || '';
+    const modalMainPhoto = document.getElementById('opt-modal-img')?.src || '';
+    const sizeItems = typeof cupissaGetSelectedSizeItems === 'function' ? cupissaGetSelectedSizeItems() : [];
+    const hasSizeOptions = typeof cupissaGetProductSizes === 'function' && cupissaGetProductSizes().length > 0;
+    const totalQuantity = hasSizeOptions
+        ? sizeItems.reduce((sum, item) => sum + item.cantidad, 0)
+        : Math.max(1, Number(selectedQtyModal || 1));
 
-            const talla = selectTalla && selectTalla.value ? selectTalla.value : null;
-            const color = selectColor && selectColor.value ? selectColor.value : null;
-            const customText = inputCustom ? inputCustom.value.trim() : '';
-            const accesoriosElegidos = typeof cupissaSelectedAccessories === 'function' ? cupissaSelectedAccessories() : [];
-            const accesorio = accesoriosElegidos.map(a => a.nombre).join(', ') || null;
-            const accesorioFoto = accesoriosElegidos[0]?.foto || '';
-            const colorFoto = selectColor && selectColor.selectedOptions[0] ? (selectColor.selectedOptions[0].dataset.photo || '') : '';
-            const modalMainPhoto = document.getElementById('opt-modal-img')?.src || '';
+    if (hasSizeOptions && totalQuantity < 1) {
+        alert('Selecciona al menos una unidad en alguna talla.');
+        return;
+    }
 
-            let unitPrice = selectedModalidad === 'alquiler' ? (selectedProductModal.precio_alquiler || 0) : selectedProductModal.precio_detal;
-            if (selectedModalidad === 'venta' && selectedProductModal.cant_min_mayorista && selectedQtyModal >= selectedProductModal.cant_min_mayorista && selectedProductModal.precio_mayorista) {
-                unitPrice = selectedProductModal.precio_mayorista;
-            }
+    const wholesale = selectedModalidad === 'venta' &&
+        Number(selectedProductModal.cant_min_mayorista || 0) > 0 &&
+        totalQuantity >= Number(selectedProductModal.cant_min_mayorista) &&
+        Number(selectedProductModal.precio_mayorista || 0) > 0;
+    const baseUnitPrice = selectedModalidad === 'alquiler'
+        ? Number(selectedProductModal.precio_alquiler || 0)
+        : wholesale
+            ? Number(selectedProductModal.precio_mayorista)
+            : Number(selectedProductModal.precio_detal || 0);
+    const colorExtra = selectColor?.selectedOptions?.[0] ? Number(selectColor.selectedOptions[0].dataset.inc || 0) : 0;
+    const accessoryExtra = accesoriosElegidos.reduce((sum, item) => sum + Number(item.incremento || 0), 0);
+    const commonPhoto = colorFoto || modalMainPhoto || selectedProductModal.fotos?.[0] || '';
+    const percentage = Number(selectedProductModal.porcentaje_anticipo ?? 20);
+    const rows = hasSizeOptions
+        ? sizeItems
+        : [{ talla: selectTalla?.value || null, cantidad: totalQuantity, incremento: Number(selectTalla?.selectedOptions?.[0]?.dataset.inc || 0) }];
 
-            if (selectTalla && selectTalla.selectedOptions[0]) unitPrice += parseFloat(selectTalla.selectedOptions[0].dataset.inc || 0);
-            if (selectColor && selectColor.selectedOptions[0]) unitPrice += parseFloat(selectColor.selectedOptions[0].dataset.inc || 0);
-            unitPrice += accesoriosElegidos.reduce((total, a) => total + a.incremento, 0);
+    const newItems = rows.map((row, index) => {
+        const quantity = Math.max(1, Number(row.cantidad || 1));
+        const unitPrice = baseUnitPrice + Number(row.incremento || 0) + colorExtra + accessoryExtra;
+        const lineTotal = unitPrice * quantity;
+        return {
+            cartId: `${selectedProductModal.id}_${Date.now()}_${index}_${Math.random().toString(36).slice(2, 6)}`,
+            productId: selectedProductModal.id,
+            nombre: selectedProductModal.nombre,
+            modalidad: selectedModalidad.toUpperCase(),
+            foto: commonPhoto,
+            fotoColor: colorFoto,
+            talla: row.talla || null,
+            color,
+            accesorio,
+            accesorios: accesoriosElegidos,
+            accesorioFoto,
+            customText,
+            cantidad: quantity,
+            cantidadMayorista: totalQuantity,
+            precioUnitario: unitPrice,
+            total: lineTotal,
+            deposito: selectedModalidad === 'alquiler' ? Number(selectedProductModal.valor_deposito || 0) * quantity : 0,
+            porcentajeAnticipo: percentage,
+            valorAnticipo: Math.round(lineTotal * percentage / 100)
+        };
+    });
 
-            const cartItem = {
-                cartId: `${selectedProductModal.id}_${Date.now()}`,
-                productId: selectedProductModal.id,
-                nombre: selectedProductModal.nombre,
-                modalidad: selectedModalidad.toUpperCase(),
-                foto: colorFoto || modalMainPhoto || (selectedProductModal.fotos && selectedProductModal.fotos[0] ? selectedProductModal.fotos[0] : ''),
-                fotoColor: colorFoto,
-                talla,
-                color,
-                accesorio,
-                accesorios: accesoriosElegidos,
-                accesorioFoto,
-                customText,
-                cantidad: selectedQtyModal,
-                precioUnitario: unitPrice,
-                total: unitPrice * selectedQtyModal,
-                deposito: selectedModalidad === 'alquiler' ? (selectedProductModal.valor_deposito || 0) * selectedQtyModal : 0,
-                porcentajeAnticipo: selectedProductModal.porcentaje_anticipo || 20,
-                valorAnticipo: Math.round((unitPrice * selectedQtyModal) * ((selectedProductModal.porcentaje_anticipo || 20) / 100))
-            };
-
-            cart.push(cartItem);
-            saveCart();
-
-            // Mantener al cliente en la ficha del producto y confirmar visualmente
-            // que se agregó al carrito, sin abrir ni cambiar de sección.
-            animateProductToCart(cartItem.foto);
-            showCartAddedFeedback();
-        }
+    cart.push(...newItems);
+    saveCart();
+    animateProductToCart(commonPhoto);
+    showCartAddedFeedback();
+}
 
         // Estado compartido del catálogo: carrito y favoritos se guardan en el navegador,
         // sin separarlos por cuenta. Así el checkout siempre lee la misma lista visible.
@@ -112,6 +130,8 @@ function addModalProductToCart() {
             cart = restoreSharedValue('cupissa_cart', 'cupissa_cart');
             favorites = restoreSharedValue('cupissa_favs', 'cupissa_favs');
             updateBadges();
+            if (typeof syncCupissaFavoriteButtons === 'function') syncCupissaFavoriteButtons();
+            if (typeof applyFiltersAndSearch === 'function' && rawProducts.length) applyFiltersAndSearch();
             return Promise.resolve({ cart, favorites });
         }
 
@@ -131,7 +151,7 @@ function addModalProductToCart() {
                 console.error('No fue posible guardar los favoritos CUPISSA:', error);
             }
             updateBadges();
-            applyFiltersAndSearch();
+            syncCupissaFavoriteButtons();
         }
 
         function updateBadges() {
@@ -150,18 +170,32 @@ function addModalProductToCart() {
 
         function toggleFavorite(prodId, e) {
             if (e) e.stopPropagation();
-            const prod = rawProducts.find(p => p.id === prodId);
+            const prod = rawProducts.find(p => String(p.id) === String(prodId));
             if (!prod) return;
-            const idx = favorites.findIndex(f => f.id === prodId);
+            const idx = favorites.findIndex(f => String(f.id) === String(prodId));
             if (idx >= 0) favorites.splice(idx, 1);
             else favorites.push(prod);
             saveFavorites();
         }
 
-        function toggleFavoriteCurrent() {
-            if (selectedProductModal) {
-                toggleFavorite(selectedProductModal.id);
-                const isFav = favorites.some(f => f.id === selectedProductModal.id);
-                document.getElementById('btn-modal-fav').innerHTML = `<i class="${isFav ? 'fa-solid fa-heart text-pink-600' : 'fa-regular fa-heart'} text-xl"></i>`;
+        function syncCupissaFavoriteButtons() {
+            document.querySelectorAll('[data-favorite-product-id]').forEach(button => {
+                const id = String(button.dataset.favoriteProductId);
+                const isFav = favorites.some(item => String(item.id) === id);
+                const icon = button.querySelector('i');
+                if (icon) icon.className = isFav ? 'fa-solid fa-heart text-pink-600 text-xs sm:text-sm' : 'fa-regular fa-heart text-xs sm:text-sm';
+                button.setAttribute('aria-label', isFav ? 'Quitar de favoritos' : 'Agregar a favoritos');
+                button.setAttribute('aria-pressed', String(isFav));
+            });
+            const modalButton = document.getElementById('btn-modal-fav');
+            if (modalButton && selectedProductModal) {
+                const isFav = favorites.some(item => String(item.id) === String(selectedProductModal.id));
+                modalButton.innerHTML = `<i class="${isFav ? 'fa-solid fa-heart text-pink-600' : 'fa-regular fa-heart'} text-xl"></i>`;
+                modalButton.setAttribute('aria-pressed', String(isFav));
             }
+        }
+        window.syncCupissaFavoriteButtons = syncCupissaFavoriteButtons;
+
+        function toggleFavoriteCurrent() {
+            if (selectedProductModal) toggleFavorite(selectedProductModal.id);
         }

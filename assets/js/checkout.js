@@ -358,7 +358,7 @@
 
     const qty = Math.max(
       1,
-      Number(item.cantidad || 1)
+      Number(item.cantidadMayorista || item.cantidad || 1)
     );
 
     if (
@@ -703,6 +703,7 @@
         ),
         modalidad: mode,
         cantidad: quantity,
+        cantidadMayorista: Math.max(quantity, Number(item.cantidadMayorista || quantity)),
         talla: item.talla || '',
         color: item.color || '',
         accesorio: item.accesorio || '',
@@ -1904,6 +1905,10 @@
       cantidad: Math.max(
         1,
         Number(line.cantidad || 1)
+      ),
+      cantidadMayorista: Math.max(
+        1,
+        Number(line.cantidadMayorista || line.cantidad || 1)
       ),
       talla: String(line.talla || ''),
       color: String(line.color || ''),

@@ -414,9 +414,14 @@
 
   async function sendEmailLoginOtp(email, redirectTo = REDIRECT_URL) {
     const correo = validateEmail(email);
+    // Supabase entrega el mismo OTP a cualquier proveedor de correo válido.
+    // No se filtra por dominio (Gmail, Hotmail/Outlook, Yahoo o correo corporativo).
     const { data, error } = await db.auth.signInWithOtp({
       email: correo,
-      options: { shouldCreateUser: false, emailRedirectTo: redirectTo || REDIRECT_URL }
+      options: {
+        shouldCreateUser: false,
+        emailRedirectTo: redirectTo || REDIRECT_URL
+      }
     });
     if (error) throwFriendly(error);
     return data;

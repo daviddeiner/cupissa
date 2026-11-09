@@ -1,5 +1,5 @@
 /* CUPISSA | PWA Service Worker. Versionar esta constante cuando se publiquen cambios. */
-const CUPISSA_CACHE = 'cupissa-app-shell-20261108-recomendaciones-detalles-v1';
+const CUPISSA_CACHE = 'cupissa-app-shell-20261108-tallas-notas-publicacion-v1';
 const CUPISSA_CACHE_PREFIX = 'cupissa-app-shell-';
 const CUPISSA_ASSETS = [
   'index.html',
@@ -17,7 +17,7 @@ const CUPISSA_ASSETS = [
   'credito-cupissa/',
   'politica-y-condiciones-de-alquileres/',
   'catalogo/manifest.webmanifest',
-  'catalogo/assets/css/catalogo.css?v=20261107-seo-auto2-v2',
+  'catalogo/assets/css/catalogo.css?v=20261108-tallas-lupa-v1',
   'catalogo/assets/css/ficha-producto-movil.css?v=20261108-detalles-movil-1',
   'catalogo/assets/js/00-config-state.js?v=20261107-banner20-auto5-v1',
   'catalogo/assets/js/01-initialization.js?v=20261107-banner20-auto5-v1',
@@ -25,8 +25,8 @@ const CUPISSA_ASSETS = [
   'catalogo/assets/js/02-product-data.js?v=20261108-recomendaciones-1',
   'catalogo/assets/js/03-filters-search.js?v=20261107-banner20-auto5-v1',
   'catalogo/assets/js/04-product-grid.js?v=20261107-banner20-auto5-v1',
-  'catalogo/assets/js/05-product-modal.js?v=20261108-modal-galeria-1',
-  'catalogo/assets/js/06-cart-favorites-state.js',
+  'catalogo/assets/js/05-product-modal.js?v=20261108-tallas-multiples-zoom-v1',
+  'catalogo/assets/js/06-cart-favorites-state.js?v=20261108-tallas-multiples-v1',
   'catalogo/assets/js/07-cart.js',
   'catalogo/assets/js/08-checkout.js',
   'catalogo/assets/js/09-favorites.js',
@@ -44,10 +44,10 @@ const CUPISSA_ASSETS = [
   'catalogo/assets/images/app-icon-512.png',
   'catalogo/assets/images/app-icon-180.png',
   'assets/css/checkout.css',
-  'assets/js/checkout.js?v=20261108-tarifas-barrios-1',
-  'assets/css/perfil.css',
-  'assets/js/perfil.js?v=20261107-portal-restauracion-simple-v4',
-  'shared/js/cupissa-auth.js?v=20261107-google-mobile-v2',
+  'assets/js/checkout.js?v=20261108-tallas-mayorista-v1',
+  'assets/css/perfil.css?v=20261108-nota-cliente-v1',
+  'assets/js/perfil.js?v=20261108-nota-cliente-v1',
+  'shared/js/cupissa-auth.js?v=20261108-otp-universal-v4',
   'shared/js/supabase-config.js',
   'portal-pagos/index.html',
   'portal-pagos/assets/css/portal.css',

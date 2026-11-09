@@ -4,6 +4,7 @@
  */
 (function () {
     let toastTimer = null;
+    const synchronizedSelects = new WeakSet();
 
     function ensureToast() {
         let toast = document.getElementById('cupissa-global-toast');
@@ -110,6 +111,10 @@
                 control.classList.toggle('is-open', willOpen);
                 trigger.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
             });
+        }
+        if (!synchronizedSelects.has(select)) {
+            select.addEventListener('change', () => refreshDropdown(select, placeholder));
+            synchronizedSelects.add(select);
         }
         refreshDropdown(select, placeholder);
     };
