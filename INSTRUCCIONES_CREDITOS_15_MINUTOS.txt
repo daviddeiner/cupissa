@@ -1,0 +1,10 @@
+CUPISSA — REGLA DE CUPO DE CRÉDITOS
+
+1. Se conserva toda la página y el código de cobros original. El único archivo nuevo de lógica es supabase/regla_creditos_15_minutos.sql.
+2. Habilita la extensión pg_cron en Supabase > Database > Extensions; ejecuta el SQL en el editor como propietario de las tablas.
+3. La evaluación se agenda automáticamente al registrar la penúltima cuota del último crédito activo (o al liquidar todas sus cuotas). El cron la ejecuta a partir de 15 minutos después, al minuto siguiente disponible. No se repite en la última cuota del mismo crédito.
+4. Se verifica fecha_pago contra fecha_vencimiento de cuotas_credito. No se adivinan fechas faltantes. El script no cambia aplicar_pago_credito, Wompi ni los datos de cuotas.
+5. CRÍTICO: la definición SQL actual de aplicar_pago_credito no está en el archivo ZIP. Antes de poner esto en producción confirma que la función marca cuotas_credito.monto_pagado, fecha_pago y estado cuando Wompi registra cuotas; de lo contrario el beneficio permanecerá sin agendar y deberá integrarse ese registro de cuotas en dicha función SQL.
+6. Se mantiene cupo_disponible = cupo_total resultante al aplicar el beneficio, tal como se solicitó. La concesión no ocurre inmediatamente sino al procesar cron.
+7. Con 1 a 4 días de retraso el script aplica 0 de variación, ya que no se especificó incremento en ese caso.
+8. No ejecutar sobre producción sin hacer una copia de seguridad y revisar el esquema real.
