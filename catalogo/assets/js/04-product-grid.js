@@ -33,6 +33,15 @@ function catalogProductCard(prod, options = {}) {
     card.setAttribute('aria-label', `Ver opciones de ${prod.nombre}`);
     card.title = `Ver ${prod.nombre}`;
     card.addEventListener('click', event => {
+        const titleLink = event.target.closest('a[data-cupissa-seo-link]');
+        if (titleLink) {
+            // Mantener el href SEO, pero en la tienda el clic normal abre el modal.
+            // Ctrl/Cmd/clic central permite abrir el enlace público en otra pestaña.
+            if (event.ctrlKey || event.metaKey || event.shiftKey || event.altKey || event.button !== 0) return;
+            event.preventDefault();
+            openOptionsModal(prod.id);
+            return;
+        }
         if (event.target.closest('[data-card-ignore-open]')) return;
         openOptionsModal(prod.id);
     });
@@ -51,7 +60,7 @@ function catalogProductCard(prod, options = {}) {
             </div>
             <div class="p-2.5 sm:p-4 space-y-1 sm:space-y-2">
                 <span class="text-[9px] sm:text-[10px] font-black uppercase text-pink-600 tracking-wider">${(prod.temporadas?.length ? prod.temporadas : [prod.temporada]).filter(Boolean).join(' - ')}</span>
-                <h3 class="product-card-title font-extrabold text-slate-900 text-[10px] leading-snug sm:text-xs tracking-tight"><a data-card-ignore-open href="${productPermalink}" class="hover:text-pink-700 hover:underline" aria-label="Ver ficha de ${prod.nombre}">${prod.nombre}</a></h3>
+                <h3 class="product-card-title font-extrabold text-slate-900 text-[10px] leading-snug sm:text-xs tracking-tight"><a data-cupissa-seo-link href="${productPermalink}" class="hover:text-pink-700 hover:underline" aria-label="Ver ficha de ${prod.nombre}">${prod.nombre}</a></h3>
                 <div class="product-activity" data-activity-product="${String(prod.id)}" hidden aria-live="polite">
                     <span><i class="fa-regular fa-eye"></i><strong data-activity-viewers>20+</strong> personas viendo</span>
                     <small class="activity-disclaimer"></small>

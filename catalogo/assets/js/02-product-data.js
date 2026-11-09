@@ -169,6 +169,25 @@ function shuffleArray(array) {
                 let selectedRows = shuffleArray([...rows]);
                 if (catalogInitialWorldsPending) {
                     catalogInitialWorldsPending = false;
+                    // Publicar inmediatamente el lote recibido: ninguna consulta
+                    // adicional de mundos, destacados o popularidad debe impedir
+                    // utilizar las tarjetas, filtros, carrito y modal existentes.
+                    const readyRows = spreadCatalogDiversity(
+                        selectedRows.filter(row => row?.id != null && !catalogLoadedProductIds.has(String(row.id))),
+                        rawProducts.slice(-8)
+                    ).map(normalizeProduct);
+                    readyRows.forEach(product => catalogLoadedProductIds.add(String(product.id)));
+                    if (readyRows.length) {
+                        rawProducts.push(...readyRows);
+                        renderFilters();
+                        applyFiltersAndSearch();
+                        updateFeaturedSeasonProducts(false);
+                        tryOpenCatalogProductFromLink();
+                        if (typeof window.loadCupissaProductPopularity === 'function') {
+                            Promise.resolve().then(() => window.loadCupissaProductPopularity(readyRows))
+                                .catch(err => console.warn('Popularidad opcional:', err));
+                        }
+                    }
                     // Consultas paralelas: la primera muestra incluye 1 producto de cada
                     // mundo con publicaciones disponibles, incluso fuera del rango de 200.
                     const worldRows = await Promise.all(CUPISSA_INITIAL_WORLDS.map(async world => {
@@ -212,7 +231,8 @@ function shuffleArray(array) {
 
                 if (uniqueBatch.length) {
                     if (typeof window.loadCupissaProductPopularity === 'function') {
-                        await window.loadCupissaProductPopularity(uniqueBatch);
+                        Promise.resolve().then(() => window.loadCupissaProductPopularity(uniqueBatch))
+                            .catch(err => console.warn('Popularidad opcional:', err));
                     }
                     // El lote viene mezclado desde arriba. No depender de una función opcional
                     // de recomendaciones que puede volver a agrupar o alterar la secuencia.
@@ -231,10 +251,11 @@ function shuffleArray(array) {
                 return uniqueBatch.length > 0;
             } catch (err) {
                 console.error('No fue posible cargar el siguiente grupo de productos desde Supabase:', err);
-                catalogSupabaseHasMore = false;
+                // Error transitorio: se conservan los productos visibles y
+                // la posición de paginación para volver a intentar en el siguiente ciclo.
                 const status = document.getElementById('scroll-end-msg');
                 if (status && !rawProducts.length) {
-                    status.textContent = 'No fue posible cargar el catálogo. Recarga la página para intentarlo nuevamente.';
+                    status.textContent = 'Conexión lenta. Se volverá a intentar cargar los productos.';
                     status.classList.remove('hidden');
                 }
                 return false;
