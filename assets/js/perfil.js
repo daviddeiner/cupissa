@@ -1635,11 +1635,6 @@
                 <p class="text-xs font-bold text-slate-700 mt-2">
                   Restante: ${money(remaining)}
                 </p>
-                ${String(order.nota || '').trim() ? `
-                  <p class="text-[11px] text-amber-800 bg-amber-50 border border-amber-100 rounded-lg px-2.5 py-2 mt-2 whitespace-pre-wrap">
-                    <strong>Nota de CUPISSA:</strong> ${safe(order.nota)}
-                  </p>
-                ` : ''}
               </div>
             </div>
 
@@ -1710,13 +1705,6 @@
           </div>
         `).join('')}
       </div>
-
-      ${String(order.nota || '').trim() ? `
-        <section class="mb-5 rounded-2xl border border-amber-200 bg-amber-50/70 p-4">
-          <h3 class="text-xs font-black uppercase tracking-wide text-amber-800 mb-2">Nota de CUPISSA</h3>
-          <p class="text-sm leading-relaxed text-slate-700 whitespace-pre-wrap">${safe(order.nota)}</p>
-        </section>
-      ` : ''}
 
       <h3 class="text-sm font-black text-slate-900 mb-3">
         Productos solicitados

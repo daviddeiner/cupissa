@@ -46,8 +46,8 @@
   let deliveryQuoteStatus = 'UNSELECTED';
   let deliveryQuoteMessage = 'Selecciona tu ciudad y barrio para calcular el domicilio.';
   const DELIVERY_CITY_FALLBACK_MAX = {
-    BARRANQUILLA: 20000,
-    SOLEDAD: 15000,
+    BARRANQUILLA: 15000,
+    SOLEDAD: 12000,
     MALAMBO: 15000,
     GALAPA: 15000,
     'LA PLAYA': 18000,

@@ -27,6 +27,12 @@ function shuffleArray(array) {
 
             rawProducts = allFetched.map(normalizeProduct);
             rawProducts = shuffleArray(rawProducts);
+            if (typeof window.loadCupissaProductPopularity === 'function') {
+                await window.loadCupissaProductPopularity(rawProducts);
+            }
+            if (typeof window.mixCupissaRecommendedProducts === 'function') {
+                rawProducts = window.mixCupissaRecommendedProducts(rawProducts);
+            }
             await loadConfiguredFeaturedSeason();
             updateFeaturedSeasonProducts(true);
 
