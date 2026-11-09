@@ -1,5 +1,5 @@
 /* CUPISSA | PWA Service Worker. Versionar esta constante cuando se publiquen cambios. */
-const CUPISSA_CACHE = 'cupissa-app-shell-20261109-batch30-auto10-v1';
+const CUPISSA_CACHE = 'cupissa-app-shell-20261109-domicilios-correo-v6';
 const CUPISSA_CACHE_PREFIX = 'cupissa-app-shell-';
 const CUPISSA_ASSETS = [
   'index.html',
@@ -20,9 +20,9 @@ const CUPISSA_ASSETS = [
   'catalogo/assets/css/catalogo.css?v=20261108-tallas-lupa-v1',
   'catalogo/assets/css/ficha-producto-movil.css?v=20261108-detalles-movil-1',
   'catalogo/assets/js/00-config-state.js?v=20261107-banner20-auto5-v1',
-  'catalogo/assets/js/01-initialization.js?v=20261109-batch30-auto10-v3',
+  'catalogo/assets/js/01-initialization.js?v=20261109-batch100-auto10-v4',
   'catalogo/assets/js/01-tailwind-config.js',
-  'catalogo/assets/js/02-product-data.js?v=20261109-batch30-azar-v3',
+  'catalogo/assets/js/02-product-data.js?v=20261109-mezcla-total-v5',
   'catalogo/assets/js/03-filters-search.js?v=20261107-banner20-auto5-v1',
   'catalogo/assets/js/04-product-grid.js?v=20261109-append-grid-v3',
   'catalogo/assets/js/05-product-modal.js?v=20261108-tallas-multiples-zoom-v1',
@@ -44,7 +44,7 @@ const CUPISSA_ASSETS = [
   'catalogo/assets/images/app-icon-512.png',
   'catalogo/assets/images/app-icon-180.png',
   'assets/css/checkout.css',
-  'assets/js/checkout.js?v=20261108-tallas-mayorista-v1',
+  'assets/js/checkout.js?v=20261109-soledad-12000-v4',
   'assets/css/perfil.css?v=20261108-nota-cliente-v1',
   'assets/js/perfil.js?v=20261108-nota-cliente-v1',
   'shared/js/cupissa-auth.js?v=20261108-otp-universal-v4',
@@ -59,7 +59,7 @@ const CUPISSA_ASSETS = [
   'portal-pagos/assets/js/08-payment-gateway.js',
   'portal-pagos/assets/js/09-formatters.js',
   'portal-pagos/services/wompi/02-date-and-late-fees.js',
-  'portal-pagos/services/wompi/04-checkout.js?v=20261104-swift-endpoint-2',
+  'portal-pagos/services/wompi/04-checkout.js?v=20261109-soledad-12000-v4',
   'portal-pagos/services/wompi/03-payment-service.js?v=20261107-otp-auth'
 ];
 

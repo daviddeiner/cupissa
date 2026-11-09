@@ -343,6 +343,18 @@
     );
   }
 
+  // Suma todas las variantes del producto con la misma modalidad,
+  // en correspondencia con la validación de precios del servidor.
+  let checkoutQuantityByProductMode = new Map();
+  function updateCheckoutWholesaleQuantities(items) {
+    checkoutQuantityByProductMode = new Map();
+    for (const item of items) {
+      const key = `${String(item.productId || '')}::${String(item.modalidad || 'VENTA').toUpperCase()}`;
+      const quantity = Math.max(1, Math.floor(Number(item.cantidad || 1)));
+      checkoutQuantityByProductMode.set(key, (checkoutQuantityByProductMode.get(key) || 0) + quantity);
+    }
+  }
+
   function baseUnitPrice(product, item) {
     const rental =
       String(item.modalidad || '').toUpperCase() === 'ALQUILER';
@@ -356,10 +368,9 @@
           0
         );
 
-    const qty = Math.max(
-      1,
-      Number(item.cantidadMayorista || item.cantidad || 1)
-    );
+    const quantityKey = `${String(item.productId || '')}::${String(item.modalidad || 'VENTA').toUpperCase()}`;
+    const qty = checkoutQuantityByProductMode.get(quantityKey) ||
+      Math.max(1, Number(item.cantidad || 1));
 
     if (
       !rental &&
@@ -669,6 +680,7 @@
       );
     }
 
+    updateCheckoutWholesaleQuantities(currentCart);
     productLines = currentCart.map(item => {
       const product = productsById.get(
         String(item.productId)
@@ -945,15 +957,39 @@
         { body }
       );
 
-    if (data?.error) {
-      throw new Error(String(data.error));
-    }
-
     if (error) {
+      let serverMessage = '';
+      const response = error.context;
+
+      // Supabase FunctionsHttpError conserva la respuesta HTTP en context.
+      // Leer una copia permite mostrar el mensaje real del backend (400/409/500).
+      if (response && typeof response.clone === 'function') {
+        try {
+          const payload = await response.clone().json();
+          serverMessage = String(
+            payload?.error || payload?.message || payload?.details || ''
+          ).trim();
+        } catch (_) {
+          try {
+            serverMessage = String(await response.clone().text()).trim();
+          } catch (_) {
+            serverMessage = '';
+          }
+        }
+      }
+
+      if (!serverMessage && data?.error) {
+        serverMessage = String(data.error);
+      }
+
       throw new Error(
-        error.message ||
+        serverMessage || error.message ||
         'No fue posible comunicarse con el servidor de pagos.'
       );
+    }
+
+    if (data?.error) {
+      throw new Error(String(data.error));
     }
 
     if (!data || typeof data !== 'object') {
@@ -1032,6 +1068,8 @@
     const options = isCity ? DELIVERY_CITY_LABELS : getNeighborhoodOptions(cityKey);
     const query = normalizeLocationText(input.value);
     const filtered = options.filter(value => !query || normalizeLocationText(value).includes(query));
+    // Permite elegir OTRO aunque no haya coincidencias con el texto escrito.
+    if (!isCity && !filtered.includes('OTRO')) filtered.push('OTRO');
     const visible = filtered.slice(0, 45);
 
     if (!visible.length) {

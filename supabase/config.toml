@@ -1,2 +1,2 @@
-[functions.switf-endpoint]
+[functions.swift-endpoint]
 verify_jwt = false

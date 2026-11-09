@@ -1,0 +1,18 @@
+CUPISSA — CORRECCIÓN NOMBRE EDGE FUNCTION
+
+La función existente en Supabase se llama: swift-endpoint
+
+Se corrigieron las llamadas en:
+- assets/js/checkout.js (crear y confirmar pago)
+- pago-resultado.html (confirmación al regresar de Wompi)
+- supabase/config.toml (solo swift-endpoint)
+- checkout/index.html y service-worker.js (renovación de cache).
+
+PASOS
+1. Publicar el contenido completo de la carpeta cupissa/ en GitHub Pages, como hasta ahora.
+2. En Supabase > Edge Functions > swift-endpoint > index.ts, pegar el archivo index.ts de supabase/functions/swift-endpoint/ y desplegarlo.
+3. Verificar en Secrets: WOMPI_PUBLIC_KEY, WOMPI_INTEGRITY_SECRET, WOMPI_PRIVATE_KEY y WOMPI_EVENTS_SECRET, del mismo ambiente. No incluir esos valores en la web.
+4. Confirmar que la función swift-endpoint está desplegada y que los RPC de pedidos / tablas están configurados.
+5. En el navegador recargar manualmente la página después de la publicación. Si es PWA instalada, usar Actualizar aplicación.
+
+IMPORTANTE: Este paquete corrige el nombre equivocado de la función y la cache. No se ha podido probar una transacción real ni verificar el despliegue remoto de Supabase desde aquí.

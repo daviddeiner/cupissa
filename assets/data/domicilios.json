@@ -246,7 +246,7 @@
       },
       {
         "barrio": "Juan Mina",
-        "tarifa": 20000
+        "tarifa": 15000
       },
       {
         "barrio": "Kennedy",
@@ -486,7 +486,7 @@
       },
       {
         "barrio": "Pradomar",
-        "tarifa": 20000
+        "tarifa": 15000
       },
       {
         "barrio": "Pumarejo",
@@ -582,7 +582,7 @@
       },
       {
         "barrio": "Siape",
-        "tarifa": 18000
+        "tarifa": 15000
       },
       {
         "barrio": "Siete de Agosto",
@@ -606,7 +606,7 @@
       },
       {
         "barrio": "Urbaplaya",
-        "tarifa": 20000
+        "tarifa": 15000
       },
       {
         "barrio": "Urbanización La Ceiba",
@@ -1264,7 +1264,7 @@
       },
       {
         "barrio": "Vía Aeropuerto Sector",
-        "tarifa": 15000
+        "tarifa": 12000
       },
       {
         "barrio": "Villa Adela I",

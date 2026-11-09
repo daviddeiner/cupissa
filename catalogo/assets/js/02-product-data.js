@@ -11,7 +11,17 @@ function shuffleArray(array) {
             return array;
         }
 
-        const CUPISSA_CATALOG_PAGE_SIZE = 30;
+        const CUPISSA_CATALOG_PAGE_SIZE = 100;
+        // Todos los mundos representados en la primera carga de 100 productos.
+        const CUPISSA_INITIAL_WORLDS = [
+            'INFANTIL', 'DAMAS', 'CABALLEROS', 'HOGAR', 'PUBLICIDAD Y EVENTOS',
+            'DETALLES', 'PERSONALIZADOS', 'CONFECCIONES', 'ACCESORIOS',
+            'JUGUETES', 'CALZADO', 'PAPELERÍA', 'FERRETERÍA', 'OTROS'
+        ];
+        let catalogInitialWorldsPending = true;
+        let catalogRealtimeChannel = null;
+        const catalogRealtimeQueue = [];
+
         let catalogSupabasePageOffsets = [];
         let catalogSupabasePageIndex = 0;
         let catalogSupabaseHasMore = true;
@@ -64,12 +74,38 @@ function shuffleArray(array) {
                     return false;
                 }
 
-                // Primero se mezcla el orden de los grupos de 30 y luego sus productos.
-                // Así el catálogo del cliente no queda agrupado por fecha de creación.
-
-                const uniqueBatch = shuffleArray(rows
+                // Desordenar cada lote recibido, además de las páginas consultadas aleatoriamente.
+                // No reordenar productos ya visibles ni modificar el scroll.
+                let selectedRows = shuffleArray([...rows]);
+                if (catalogInitialWorldsPending) {
+                    catalogInitialWorldsPending = false;
+                    // Consultas paralelas: la primera muestra incluye 1 producto de cada
+                    // mundo con publicaciones disponibles, incluso fuera del rango de 100.
+                    const worldRows = await Promise.all(CUPISSA_INITIAL_WORLDS.map(async world => {
+                        let response = await supabaseClient.from('productos')
+                            .select(CUPISSA_CATALOG_PRODUCT_FIELDS)
+                            .eq('oculto', false).eq('mundo', world)
+                            .order('created_at', { ascending: false }).limit(1);
+                        if (!response.error && response.data?.length) return response.data[0];
+                        response = await supabaseClient.from('productos')
+                            .select(CUPISSA_CATALOG_PRODUCT_FIELDS)
+                            .eq('oculto', false).contains('mundos', [world])
+                            .order('created_at', { ascending: false }).limit(1);
+                        return (!response.error && response.data?.length) ? response.data[0] : null;
+                    }));
+                    const representatives = worldRows.filter(Boolean);
+                    // Mostrar los representantes desde la primera pantalla, no esperar
+                    // a que la carga automática complete los primeros 10 elementos.
+                    displayLimit = Math.max(displayLimit, representatives.length);
+                    const initialSeen = new Set(representatives.map(row => String(row.id)));
+                    selectedRows = shuffleArray([
+                        ...representatives,
+                        ...rows.filter(row => !initialSeen.has(String(row.id)))
+                    ].slice(0, CUPISSA_CATALOG_PAGE_SIZE));
+                }
+                const uniqueBatch = selectedRows
                     .filter(row => row?.id != null && !catalogLoadedProductIds.has(String(row.id)))
-                    .map(normalizeProduct));
+                    .map(normalizeProduct);
 
                 uniqueBatch.forEach(product => catalogLoadedProductIds.add(String(product.id)));
 
@@ -77,9 +113,9 @@ function shuffleArray(array) {
                     if (typeof window.loadCupissaProductPopularity === 'function') {
                         await window.loadCupissaProductPopularity(uniqueBatch);
                     }
-                    const mixedBatch = typeof window.mixCupissaRecommendedProducts === 'function'
-                        ? window.mixCupissaRecommendedProducts(uniqueBatch)
-                        : uniqueBatch;
+                    // El lote viene mezclado desde arriba. No depender de una función opcional
+                    // de recomendaciones que puede volver a agrupar o alterar la secuencia.
+                    const mixedBatch = uniqueBatch;
                     rawProducts.push(...mixedBatch);
 
                     renderFilters();
@@ -118,6 +154,8 @@ function shuffleArray(array) {
             catalogSupabaseLoading = false;
             catalogSupabaseInitialized = false;
             catalogLoadedProductIds = new Set();
+            catalogInitialWorldsPending = true;
+            catalogRealtimeQueue.length = 0;
             window.__cupissaProductLinkOpened = false;
             displayLimit = CUPISSA_PRODUCT_BATCH_SIZE;
 
@@ -147,7 +185,42 @@ function shuffleArray(array) {
                 applyFiltersAndSearch();
             }
             if (typeof setupAutomaticProductLoading === 'function') setupAutomaticProductLoading();
+            setupCatalogRealtimeAppendOnly();
         }
+
+        // INSERT: solo anexar al final; DELETE/UPDATE: conservar vista hasta recarga manual.
+        // No se restablece rawProducts, displayLimit, filtros ni posición de scroll.
+        function setupCatalogRealtimeAppendOnly() {
+            if (catalogRealtimeChannel || !supabaseClient?.channel) return;
+            catalogRealtimeChannel = supabaseClient.channel('cupissa-catalog-append-only')
+                .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'productos' },
+                    async payload => {
+                        const id = String(payload.new?.id || '');
+                        if (!id || catalogLoadedProductIds.has(id)) return;
+                        const { data, error } = await supabaseClient.from('productos')
+                            .select(CUPISSA_CATALOG_PRODUCT_FIELDS)
+                            .eq('id', id).eq('oculto', false).maybeSingle();
+                        if (error || !data || catalogLoadedProductIds.has(id)) return;
+                        catalogRealtimeQueue.push(normalizeProduct(data));
+                        // No alterar la clasificación de los resultados durante la búsqueda.
+                        if (document.getElementById('smart-search-input')?.value?.trim()) return;
+                        flushCatalogRealtimeQueue();
+                    })
+                .subscribe();
+        }
+        function flushCatalogRealtimeQueue() {
+            if (document.getElementById('smart-search-input')?.value?.trim()) return;
+            const appended = catalogRealtimeQueue.splice(0).filter(product => {
+                if (catalogLoadedProductIds.has(String(product.id))) return false;
+                catalogLoadedProductIds.add(String(product.id));
+                return true;
+            });
+            if (!appended.length) return;
+            rawProducts.push(...appended);
+            renderFilters();
+            applyFiltersAndSearch();
+        }
+        window.flushCupissaNewCatalogProducts = flushCatalogRealtimeQueue;
 
         async function loadConfiguredFeaturedSeason() {
             hasFeaturedSeasonConfiguration = false;

@@ -276,6 +276,11 @@ function filterBySubcategoria(subcat) {
         function applyFiltersAndSearch() {
             const searchElement = document.getElementById('smart-search-input');
             const query = (searchElement?.value || '').trim();
+            if (!query && typeof window.flushCupissaNewCatalogProducts === 'function') {
+                // Cargar publicaciones recibidas mientras el usuario buscaba.
+                // Evitar recursión: la cola se vacía antes de aplicar filtros.
+                window.flushCupissaNewCatalogProducts();
+            }
 
             const results = rawProducts.filter(p => {
                 const valuesFor = (plural, singular) => (Array.isArray(p[plural]) && p[plural].length ? p[plural] : [p[singular]])
