@@ -11,57 +11,142 @@ function shuffleArray(array) {
             return array;
         }
 
-        async function fetchCatalogProducts() {
-            let allFetched = [];
-            const productFields = 'id,nombre,mundo,mundos,categoria,categorias,subcategoria,subcategorias,temporada,temporadas,precio_detal,precio_mayorista,cant_min_mayorista,porcentaje_anticipo,dias_preparacion,personalizable,al_por_mayor,venta,alquiler,credito,precio_alquiler,valor_deposito,tallas,colores,fotos,created_at,descripcion,accesorios,oculto';
+        const CUPISSA_CATALOG_PAGE_SIZE = 30;
+        let catalogSupabasePageOffsets = [];
+        let catalogSupabasePageIndex = 0;
+        let catalogSupabaseHasMore = true;
+        let catalogSupabaseLoading = false;
+        let catalogSupabaseInitialized = false;
+        let catalogLoadedProductIds = new Set();
+        const CUPISSA_CATALOG_PRODUCT_FIELDS = 'id,nombre,mundo,mundos,categoria,categorias,subcategoria,subcategorias,temporada,temporadas,precio_detal,precio_mayorista,cant_min_mayorista,porcentaje_anticipo,dias_preparacion,personalizable,al_por_mayor,venta,alquiler,credito,precio_alquiler,valor_deposito,tallas,colores,fotos,created_at,descripcion,accesorios,oculto';
+
+        function tryOpenCatalogProductFromLink() {
+            if (window.__cupissaProductLinkOpened) return;
+            const productFromLink = new URLSearchParams(window.location.search).get('producto');
+            if (!productFromLink) return;
+            const product = rawProducts.find(item => String(item.id) === productFromLink);
+            if (!product) return;
+            window.__cupissaProductLinkOpened = true;
+            openOptionsModal(product.id);
+        }
+
+        function finishCatalogSupabaseLoading() {
+            updateFeaturedSeasonProducts(true);
+            renderSeasonFeatured();
+            updateSEOStructuredData();
+            tryOpenCatalogProductFromLink();
+            catalogSupabaseHasMore = false;
+        }
+
+        async function loadNextCatalogProductsPage() {
+            if (catalogSupabaseLoading || !catalogSupabaseHasMore || !catalogSupabaseInitialized) return false;
+            catalogSupabaseLoading = true;
             try {
-                // Supabase limita las filas por respuesta. Pedimos páginas de 100 en paralelo
-                // para evitar una única respuesta grande y reducir el tiempo de espera.
-                const pageSize = 100;
-                const firstPage = await supabaseClient.from('productos')
-                    .select(productFields, { count: 'exact' })
+                const from = catalogSupabasePageOffsets[catalogSupabasePageIndex];
+                if (from == null) {
+                    finishCatalogSupabaseLoading();
+                    return false;
+                }
+                const to = from + CUPISSA_CATALOG_PAGE_SIZE - 1;
+                const { data, error } = await supabaseClient
+                    .from('productos')
+                    .select(CUPISSA_CATALOG_PRODUCT_FIELDS)
                     .eq('oculto', false)
                     .order('created_at', { ascending: false })
-                    .range(0, pageSize - 1);
-                if (firstPage.error) throw firstPage.error;
-                allFetched = Array.isArray(firstPage.data) ? firstPage.data : [];
-                const total = Number(firstPage.count || allFetched.length);
-                if (total > pageSize) {
-                    const pageStarts = [];
-                    for (let offset = pageSize; offset < total; offset += pageSize) pageStarts.push(offset);
-                    const pages = await Promise.all(pageStarts.map(offset => supabaseClient.from('productos')
-                        .select(productFields)
-                        .eq('oculto', false)
-                        .order('created_at', { ascending: false })
-                        .range(offset, Math.min(offset + pageSize - 1, total - 1))));
-                    for (const page of pages) {
-                        if (page.error) throw page.error;
-                        if (Array.isArray(page.data)) allFetched.push(...page.data);
-                    }
+                    .range(from, to);
+
+                if (error) throw error;
+                const rows = Array.isArray(data) ? data : [];
+                catalogSupabasePageIndex += 1;
+                catalogSupabaseHasMore = catalogSupabasePageIndex < catalogSupabasePageOffsets.length;
+                if (!rows.length) {
+                    if (!catalogSupabaseHasMore) finishCatalogSupabaseLoading();
+                    return false;
                 }
+
+                // Primero se mezcla el orden de los grupos de 30 y luego sus productos.
+                // Así el catálogo del cliente no queda agrupado por fecha de creación.
+
+                const uniqueBatch = shuffleArray(rows
+                    .filter(row => row?.id != null && !catalogLoadedProductIds.has(String(row.id)))
+                    .map(normalizeProduct));
+
+                uniqueBatch.forEach(product => catalogLoadedProductIds.add(String(product.id)));
+
+                if (uniqueBatch.length) {
+                    if (typeof window.loadCupissaProductPopularity === 'function') {
+                        await window.loadCupissaProductPopularity(uniqueBatch);
+                    }
+                    const mixedBatch = typeof window.mixCupissaRecommendedProducts === 'function'
+                        ? window.mixCupissaRecommendedProducts(uniqueBatch)
+                        : uniqueBatch;
+                    rawProducts.push(...mixedBatch);
+
+                    renderFilters();
+                    applyFiltersAndSearch();
+                    updateFeaturedSeasonProducts(false);
+                    tryOpenCatalogProductFromLink();
+                }
+
+                if (!catalogSupabaseHasMore) {
+                    finishCatalogSupabaseLoading();
+                }
+                return uniqueBatch.length > 0;
             } catch (err) {
-                console.error('Excepción en consulta paginada de productos visibles de Supabase:', err);
+                console.error('No fue posible cargar el siguiente grupo de productos desde Supabase:', err);
+                catalogSupabaseHasMore = false;
+                const status = document.getElementById('scroll-end-msg');
+                if (status && !rawProducts.length) {
+                    status.textContent = 'No fue posible cargar el catálogo. Recarga la página para intentarlo nuevamente.';
+                    status.classList.remove('hidden');
+                }
+                return false;
+            } finally {
+                catalogSupabaseLoading = false;
             }
+        }
 
-            rawProducts = allFetched.map(normalizeProduct);
-            rawProducts = shuffleArray(rawProducts);
-            if (typeof window.loadCupissaProductPopularity === 'function') {
-                await window.loadCupissaProductPopularity(rawProducts);
-            }
-            if (typeof window.mixCupissaRecommendedProducts === 'function') {
-                rawProducts = window.mixCupissaRecommendedProducts(rawProducts);
-            }
+        window.loadNextCupissaCatalogPage = loadNextCatalogProductsPage;
+        window.hasMoreCupissaCatalogProducts = () => catalogSupabaseHasMore;
+
+        async function fetchCatalogProducts() {
+            rawProducts = [];
+            filteredProducts = [];
+            catalogSupabasePageOffsets = [];
+            catalogSupabasePageIndex = 0;
+            catalogSupabaseHasMore = true;
+            catalogSupabaseLoading = false;
+            catalogSupabaseInitialized = false;
+            catalogLoadedProductIds = new Set();
+            window.__cupissaProductLinkOpened = false;
+            displayLimit = CUPISSA_PRODUCT_BATCH_SIZE;
+
             await loadConfiguredFeaturedSeason();
-            updateFeaturedSeasonProducts(true);
-
-            renderFilters();
-            applyFiltersAndSearch();
-            if (typeof setupAutomaticProductLoading === 'function') setupAutomaticProductLoading();
-            updateSEOStructuredData();
-            const productFromLink = new URLSearchParams(window.location.search).get('producto');
-            if (productFromLink && rawProducts.some(product => String(product.id) === productFromLink)) {
-                openOptionsModal(productFromLink);
+            try {
+                const { count, error } = await supabaseClient
+                    .from('productos')
+                    .select('id', { count: 'exact', head: true })
+                    .eq('oculto', false);
+                if (error) throw error;
+                const totalPages = Math.ceil(Number(count || 0) / CUPISSA_CATALOG_PAGE_SIZE);
+                catalogSupabasePageOffsets = shuffleArray(
+                    Array.from({ length: totalPages }, (_, index) => index * CUPISSA_CATALOG_PAGE_SIZE)
+                );
+                catalogSupabaseHasMore = catalogSupabasePageOffsets.length > 0;
+                catalogSupabaseInitialized = true;
+            } catch (error) {
+                console.error('No fue posible preparar la paginación aleatoria del catálogo:', error);
+                catalogSupabaseHasMore = false;
+                renderFilters();
+                applyFiltersAndSearch();
+                return;
             }
+            const loaded = await loadNextCatalogProductsPage();
+            if (!loaded && !rawProducts.length) {
+                renderFilters();
+                applyFiltersAndSearch();
+            }
+            if (typeof setupAutomaticProductLoading === 'function') setupAutomaticProductLoading();
         }
 
         async function loadConfiguredFeaturedSeason() {

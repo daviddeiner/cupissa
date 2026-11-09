@@ -108,14 +108,18 @@ function renderProductsGrid() {
     // Conservar tarjetas ya dibujadas durante la carga progresiva: no reordenar al hacer scroll.
     const mobileMosaic = window.matchMedia('(max-width: 767px)').matches;
     const catalogKey = filteredProducts.map(p => String(p.id)).join('|');
-    const sameCatalog = grid.dataset.catalogKey === catalogKey
-        && grid.dataset.mobileMosaic === String(mobileMosaic);
-    if (!sameCatalog) {
+    const previousCatalogKey = grid.dataset.catalogKey || '';
+    const sameLayout = grid.dataset.mobileMosaic === String(mobileMosaic);
+    const sameCatalog = previousCatalogKey === catalogKey && sameLayout;
+    // Si solo se agregaron productos al final, conservar las tarjetas existentes.
+    // Si cambió el orden por filtros o búsqueda, reconstruir la grilla para no mezclar resultados.
+    const appendedCatalog = !!previousCatalogKey && sameLayout && catalogKey.startsWith(previousCatalogKey + '|');
+    if (!sameCatalog && !appendedCatalog) {
         grid.replaceChildren();
-        grid.dataset.catalogKey = catalogKey;
-        grid.dataset.mobileMosaic = String(mobileMosaic);
         grid.dataset.renderedCount = '0';
     }
+    grid.dataset.catalogKey = catalogKey;
+    grid.dataset.mobileMosaic = String(mobileMosaic);
     let columns = null;
     if (mobileMosaic) {
         columns = Array.from(grid.querySelectorAll(':scope > .cupissa-mosaic-column'));

@@ -1,62 +1,60 @@
-/** CUPISSA | Scroll infinito: 10 productos por lote, con pausa mínima de 1 segundo. */
-let productsScrollObserver = null;
-let lastProductsBatchAt = 0;
+/** CUPISSA | Carga progresiva automática: 30 productos por consulta y 10 tarjetas por segundo. */
 let productsBatchPending = false;
-let productsScrollHandlerBound = false;
-let productsScrollRafPending = false;
-function loadNextProductsBatch() {
-    if (isLoadingMore || productsBatchPending || displayLimit >= filteredProducts.length) return;
-    const wait = Math.max(0, 1000 - (Date.now() - lastProductsBatchAt));
+let productsAutoLoadTimer = null;
+
+async function loadNextProductsBatch() {
+    if (productsBatchPending || isLoadingMore) return;
     productsBatchPending = true;
-    window.setTimeout(() => {
-        productsBatchPending = false;
-        if (isLoadingMore || displayLimit >= filteredProducts.length) return;
-        isLoadingMore = true;
-        const loadingMsg = document.getElementById('scroll-loading-msg');
-        const endMsg = document.getElementById('scroll-end-msg');
-        if (loadingMsg) loadingMsg.classList.remove('hidden');
-        if (endMsg) endMsg.classList.add('hidden');
-        try {
+    isLoadingMore = true;
+
+    const loadingMsg = document.getElementById('scroll-loading-msg');
+    const endMsg = document.getElementById('scroll-end-msg');
+    if (loadingMsg) loadingMsg.classList.remove('hidden');
+    if (endMsg) endMsg.classList.add('hidden');
+
+    try {
+        if (displayLimit < filteredProducts.length) {
             displayLimit = Math.min(displayLimit + CUPISSA_PRODUCT_BATCH_SIZE, filteredProducts.length);
             renderProductsGrid();
-            lastProductsBatchAt = Date.now();
-        } finally {
-            isLoadingMore = false;
-            if (loadingMsg) loadingMsg.classList.toggle('hidden', displayLimit >= filteredProducts.length);
+            return;
         }
-    }, wait);
+
+        // Cuando ya se mostraron los productos descargados, traer el siguiente grupo
+        // de 30 desde Supabase. No depende del scroll ni de alcanzar el final de la página.
+        if (typeof window.hasMoreCupissaCatalogProducts === 'function' &&
+            window.hasMoreCupissaCatalogProducts() &&
+            typeof window.loadNextCupissaCatalogPage === 'function') {
+            const previousCount = filteredProducts.length;
+            await window.loadNextCupissaCatalogPage();
+            if (filteredProducts.length > previousCount) {
+                displayLimit = Math.min(displayLimit + CUPISSA_PRODUCT_BATCH_SIZE, filteredProducts.length);
+                renderProductsGrid();
+            }
+        }
+    } catch (error) {
+        console.error('[CUPISSA] Error durante la carga automática del catálogo:', error);
+    } finally {
+        productsBatchPending = false;
+        isLoadingMore = false;
+        if (loadingMsg) loadingMsg.classList.toggle('hidden', displayLimit >= filteredProducts.length);
+        if (endMsg && !(typeof window.hasMoreCupissaCatalogProducts === 'function' && window.hasMoreCupissaCatalogProducts())) {
+            endMsg.classList.toggle('hidden', displayLimit < filteredProducts.length);
+            if (displayLimit >= filteredProducts.length) endMsg.textContent = 'Has llegado al final del catálogo';
+        }
+    }
 }
+
 function setupAutomaticProductLoading() {
-    const sentinel = document.getElementById('scroll-status-container');
-    if (!sentinel) return;
-    if (productsScrollObserver) {
-        productsScrollObserver.unobserve(sentinel);
-        productsScrollObserver.observe(sentinel);
-        return;
-    }
-    if ('IntersectionObserver' in window) {
-        productsScrollObserver = new IntersectionObserver(entries => {
-            if (entries.some(entry => entry.isIntersecting)) loadNextProductsBatch();
-        }, { root: null, rootMargin: '650px 0px', threshold: 0 });
-        productsScrollObserver.observe(sentinel);
-    }
-    // El evento de scroll complementa al observador para no detenerse si el
-    // sentinel permanece dentro del margen visible después de añadir un lote.
-    if (!productsScrollHandlerBound) {
-        productsScrollHandlerBound = true;
-        window.addEventListener('scroll', () => {
-            if (productsScrollRafPending) return;
-            productsScrollRafPending = true;
-            requestAnimationFrame(() => {
-                productsScrollRafPending = false;
-                if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 650) loadNextProductsBatch();
-            });
-        }, { passive: true });
-    }
+    if (productsAutoLoadTimer !== null) return;
+    // El intervalo es la fuente principal de carga. El cliente no tiene que desplazarse
+    // hasta el centinela ni acercarse al final para descubrir nuevos productos.
+    productsAutoLoadTimer = window.setInterval(() => {
+        loadNextProductsBatch();
+    }, 1000);
 }
+
 window.onload = function() {
     updateBadges();
-    setupAutomaticProductLoading();
     fetchCatalogProducts();
     if (typeof initializeCatalogAccountState === 'function') {
         Promise.resolve(initializeCatalogAccountState()).catch(error => {
