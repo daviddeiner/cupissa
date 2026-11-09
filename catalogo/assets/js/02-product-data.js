@@ -11,8 +11,78 @@ function shuffleArray(array) {
             return array;
         }
 
-        const CUPISSA_CATALOG_PAGE_SIZE = 100;
-        // Todos los mundos representados en la primera carga de 100 productos.
+        const CUPISSA_CATALOG_PAGE_SIZE = 200;
+        // Diversidad editorial: evita secuencias extensas del mismo mundo,
+        // categoría, subcategoría o temporada sin esconder publicaciones.
+        // Opera en memoria sobre cada lote: no cambia SQL, precios ni filtros.
+        function catalogDiversityValues(product, singular, plural) {
+            const collect = value => {
+                if (Array.isArray(value)) return value;
+                if (typeof value === 'string') {
+                    try {
+                        const parsed = JSON.parse(value);
+                        if (Array.isArray(parsed)) return parsed;
+                    } catch (_) { /* texto simple */ }
+                    return value.split(/[,;|]/);
+                }
+                return [];
+            };
+            return [...collect(product?.[singular]), ...collect(product?.[plural])]
+                .map(value => String(value ?? '').trim().toLocaleUpperCase('es-CO'))
+                .filter(Boolean);
+        }
+
+        function spreadCatalogDiversity(rows, preceding = []) {
+            const pending = shuffleArray([...rows]);
+            const result = [];
+            const recent = preceding.slice(-8);
+            const dimensions = [
+                ['mundo', 'mundos', 12],
+                ['categoria', 'categorias', 7],
+                ['subcategoria', 'subcategorias', 5],
+                ['temporada', 'temporadas', 4]
+            ];
+            const counts = dimensions.map(() => new Map());
+            for (const existing of preceding) {
+                dimensions.forEach(([singular, plural], i) => {
+                    for (const value of new Set(catalogDiversityValues(existing, singular, plural))) {
+                        counts[i].set(value, (counts[i].get(value) || 0) + 1);
+                    }
+                });
+            }
+            while (pending.length) {
+                let bestIndex = 0;
+                let bestScore = Infinity;
+                for (let i = 0; i < pending.length; i++) {
+                    let score = Math.random() * 0.8;
+                    const candidate = pending[i];
+                    dimensions.forEach(([singular, plural, weight], d) => {
+                        const values = catalogDiversityValues(candidate, singular, plural);
+                        if (!values.length) return;
+                        score += Math.min(...values.map(v => counts[d].get(v) || 0)) * 0.20;
+                        recent.forEach((previous, distance) => {
+                            const other = catalogDiversityValues(previous, singular, plural);
+                            if (values.some(value => other.includes(value))) {
+                                score += weight / (recent.length - distance);
+                            }
+                        });
+                    });
+                    if (score < bestScore) { bestScore = score; bestIndex = i; }
+                }
+                const [chosen] = pending.splice(bestIndex, 1);
+                result.push(chosen);
+                recent.push(chosen);
+                if (recent.length > 8) recent.shift();
+                dimensions.forEach(([singular, plural], d) => {
+                    for (const value of new Set(catalogDiversityValues(chosen, singular, plural))) {
+                        counts[d].set(value, (counts[d].get(value) || 0) + 1);
+                    }
+                });
+            }
+            return result;
+        }
+
+        // Todos los mundos representados en la primera carga de 200 productos.
         const CUPISSA_INITIAL_WORLDS = [
             'INFANTIL', 'DAMAS', 'CABALLEROS', 'HOGAR', 'PUBLICIDAD Y EVENTOS',
             'DETALLES', 'PERSONALIZADOS', 'CONFECCIONES', 'ACCESORIOS',
@@ -100,7 +170,7 @@ function shuffleArray(array) {
                 if (catalogInitialWorldsPending) {
                     catalogInitialWorldsPending = false;
                     // Consultas paralelas: la primera muestra incluye 1 producto de cada
-                    // mundo con publicaciones disponibles, incluso fuera del rango de 100.
+                    // mundo con publicaciones disponibles, incluso fuera del rango de 200.
                     const worldRows = await Promise.all(CUPISSA_INITIAL_WORLDS.map(async world => {
                         let response = await supabaseClient.from('productos')
                             .select(CUPISSA_CATALOG_PRODUCT_FIELDS)
@@ -125,12 +195,16 @@ function shuffleArray(array) {
                         if (row?.id != null) reserved.set(String(row.id), row);
                     });
                     const rest = shuffleArray(rows.filter(row => !reserved.has(String(row.id))));
-                    selectedRows = shuffleArray([
+                    selectedRows = [
                         ...reserved.values(),
                         ...rest.slice(0, Math.max(0, CUPISSA_CATALOG_PAGE_SIZE - reserved.size))
-                    ]);
+                    ];
                 }
-                const uniqueBatch = selectedRows
+                const diversifiedRows = spreadCatalogDiversity(
+                    selectedRows.filter(row => row?.id != null && !catalogLoadedProductIds.has(String(row.id))),
+                    rawProducts.slice(-8)
+                );
+                const uniqueBatch = diversifiedRows
                     .filter(row => row?.id != null && !catalogLoadedProductIds.has(String(row.id)))
                     .map(normalizeProduct);
 

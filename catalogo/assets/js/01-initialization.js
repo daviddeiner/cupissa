@@ -1,4 +1,4 @@
-/** CUPISSA | Carga progresiva automática: 100 productos por consulta y 10 tarjetas por segundo. */
+/** CUPISSA | Carga progresiva automática: 200 productos por consulta y 10 tarjetas por segundo. */
 let productsBatchPending = false;
 let productsAutoLoadTimer = null;
 
@@ -20,7 +20,7 @@ async function loadNextProductsBatch() {
         }
 
         // Cuando ya se mostraron los productos descargados, traer el siguiente grupo
-        // de 100 desde Supabase. No depende del scroll ni de alcanzar el final de la página.
+        // de 200 desde Supabase. No depende del scroll ni de alcanzar el final de la página.
         if (typeof window.hasMoreCupissaCatalogProducts === 'function' &&
             window.hasMoreCupissaCatalogProducts() &&
             typeof window.loadNextCupissaCatalogPage === 'function') {
