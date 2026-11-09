@@ -4,6 +4,7 @@
  */
 
 function openCartModal() {
+    if (!cupissaRequireAccount()) return;
             if (typeof closeProfileModal === 'function') closeProfileModal();
             // Cambiar directamente al carrito: evita que Favoritos u otro panel
             // quede superpuesto y bloquee los botones inferiores.

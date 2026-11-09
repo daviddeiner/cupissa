@@ -1,0 +1,5 @@
+CUPISSA - 3 cambios solicitados.
+
+Para sincronizar carrito y favoritos entre dispositivos, ejecutar UNA SOLA VEZ el SQL existente: supabase/catalog_account_state.sql en Supabase SQL Editor.
+Sin esa tabla, los datos quedan aislados por usuario en el navegador actual, pero no se sincronizan entre dispositivos.
+No se modifica la lógica de carga de productos ni los estilos.

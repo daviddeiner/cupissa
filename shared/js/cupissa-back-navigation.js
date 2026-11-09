@@ -13,6 +13,7 @@
 
   function installBackGuard() {
     const path = normalizePath(window.location.pathname);
+    if (isCatalogPage()) return;
     if (history.state?.cupissaCustomerBackGuardPath === path) return;
     try {
       history.pushState({ ...(history.state || {}), cupissaCustomerBackGuard:true, cupissaCustomerBackGuardPath:path }, '', window.location.href);
@@ -53,27 +54,35 @@
     window.scrollTo({ top:0, left:0, behavior:'auto' });
   }
 
+  // Modal product steps are history entries; product-to-product Back restores prior product.
+  let activeProduct = null;
+  let traversing = false;
+  const catalogScroll = { y: 0 };
+  window.cupissaRememberProductNavigation = productId => {
+    if (!isCatalogPage() || traversing) return;
+    const modal = document.getElementById('modal-product-options');
+    if (!modal || modal.classList.contains('hidden')) catalogScroll.y = window.scrollY;
+    if (activeProduct === productId) return;
+    history.pushState({ ...(history.state || {}), cupissaProductId:productId }, '', location.pathname + location.search + location.hash);
+    activeProduct = productId;
+  };
   window.addEventListener('popstate', () => {
     if (isEmbedded) {
       try { window.parent.postMessage({ type:'CUPISSA_BACK_TO_CATALOG_HOME' }, window.location.origin); } catch (_) {}
       return;
     }
     if (isCatalogPage()) {
-      // En móvil, Atrás cierra primero la capa superior. Solo un segundo Atrás
-      // abandona esa vista o vuelve al inicio del catálogo.
-      const fullImage = document.getElementById('modal-full-image');
-      const productOptions = document.getElementById('modal-product-options');
-      if (fullImage && !fullImage.classList.contains('hidden')) {
-        if (typeof window.closeFullImageModal === 'function') window.closeFullImageModal();
-        installBackGuard();
-        return;
+      const productId = history.state?.cupissaProductId || null;
+      if (productId && typeof window.openOptionsModal === 'function') {
+        traversing = true;
+        activeProduct = productId;
+        window.openOptionsModal(productId);
+        traversing = false;
+      } else {
+        activeProduct = null;
+        closeCatalogPanels();
+        requestAnimationFrame(() => window.scrollTo({ top:catalogScroll.y, behavior:'instant' }));
       }
-      if (productOptions && !productOptions.classList.contains('hidden')) {
-        if (typeof window.closeOptionsModal === 'function') window.closeOptionsModal();
-        installBackGuard();
-        return;
-      }
-      returnToCatalogStart();
       return;
     }
     // Producto individual, Perfil, Portal, Checkout y demás páginas vuelven al catálogo.

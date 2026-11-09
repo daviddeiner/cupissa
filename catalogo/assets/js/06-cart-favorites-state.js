@@ -5,6 +5,7 @@
 
 function addModalProductToCart() {
     if (!selectedProductModal) return;
+    if (!cupissaRequireAccount()) return;
 
     const selectTalla = document.getElementById('opt-select-talla');
     const selectColor = document.getElementById('opt-select-color');
@@ -77,81 +78,92 @@ function addModalProductToCart() {
     showCartAddedFeedback();
 }
 
-        // Estado compartido del catálogo: carrito y favoritos se guardan en el navegador,
-        // sin separarlos por cuenta. Así el checkout siempre lee la misma lista visible.
-        function parseStoredArray(value) {
-            try {
-                const parsed = JSON.parse(value || '[]');
-                return Array.isArray(parsed) ? parsed : [];
-            } catch (_) {
-                return [];
-            }
-        }
-
-        function getAccountScopedCandidates(prefix) {
-            const keys = [];
-            for (let i = 0; i < localStorage.length; i++) {
-                const key = localStorage.key(i);
-                if (key && key.startsWith(`${prefix}_account_`)) keys.push(key);
-            }
-
-            // Conserva el carrito más recientemente actualizado como migración
-            // de los datos que se habían guardado en las versiones por cuenta.
-            return keys.map(key => {
-                const accountPart = key.slice(`${prefix}_account_`.length);
-                const updatedKey = `cupissa_catalog_updated_account_${accountPart}`;
-                const updatedAt = localStorage.getItem(updatedKey);
-                const timestamp = updatedAt ? new Date(updatedAt).getTime() : 0;
-                return { key, timestamp: Number.isFinite(timestamp) ? timestamp : 0 };
-            }).sort((a, b) => b.timestamp - a.timestamp);
-        }
-
-        function restoreSharedValue(storageKey, scopedPrefix) {
-            const current = parseStoredArray(localStorage.getItem(storageKey));
-            if (current.length) return current;
-
-            for (const candidate of getAccountScopedCandidates(scopedPrefix)) {
-                const legacy = parseStoredArray(localStorage.getItem(candidate.key));
-                if (legacy.length) {
-                    try {
-                        localStorage.setItem(storageKey, JSON.stringify(legacy));
-                    } catch (error) {
-                        console.warn(`No fue posible migrar ${storageKey}:`, error);
-                    }
-                    return legacy;
-                }
-            }
-            return current;
-        }
-
-        function initializeCatalogAccountState() {
-            // Se mantiene el nombre de inicialización para no cambiar los módulos
-            // que ya lo invocan, pero ya no se requiere sesión ni consulta remota.
-            cart = restoreSharedValue('cupissa_cart', 'cupissa_cart');
-            favorites = restoreSharedValue('cupissa_favs', 'cupissa_favs');
+        // Carrito y favoritos aislados por usuario; nunca compartir estados de otros perfiles.
+        let cupissaAccountId = null;
+        let cupissaAccountReady = false;
+        let cupissaStateRevision = 0;
+        let cupissaSaveTimer = null;
+        const cupissaArray = raw => { try { const arr = JSON.parse(raw || '[]'); return Array.isArray(arr) ? arr : []; } catch (_) { return []; } };
+        const cupissaScopedKey = (kind, id = cupissaAccountId) => `cupissa_${kind}_account_${id}`;
+        const cupissaLocalRestore = () => {
+            cart = cupissaAccountId ? cupissaArray(localStorage.getItem(cupissaScopedKey('cart'))) : [];
+            favorites = cupissaAccountId ? cupissaArray(localStorage.getItem(cupissaScopedKey('favs'))) : [];
+            // Checkout usa este nombre original: mantener únicamente el carrito de la sesión activa.
+            localStorage.setItem('cupissa_cart', JSON.stringify(cart));
+            localStorage.setItem('cupissa_favs', JSON.stringify(favorites));
             updateBadges();
             if (typeof syncCupissaFavoriteButtons === 'function') syncCupissaFavoriteButtons();
-            if (typeof applyFiltersAndSearch === 'function' && rawProducts.length) applyFiltersAndSearch();
-            return Promise.resolve({ cart, favorites });
+        };
+        function cupissaRequireAccount() {
+            if (cupissaAccountId && cupissaAccountReady) return true;
+            if (typeof openProfileModal === 'function' && window.innerWidth < 768) openProfileModal();
+            else window.location.href = '/perfil/';
+            return false;
         }
-
+        function cupissaPersistState(kind) {
+            if (!cupissaAccountId || !cupissaAccountReady) return;
+            ++cupissaStateRevision;
+            localStorage.setItem(cupissaScopedKey('cart'), JSON.stringify(cart));
+            localStorage.setItem(cupissaScopedKey('favs'), JSON.stringify(favorites));
+            localStorage.setItem('cupissa_cart', JSON.stringify(cart));
+            localStorage.setItem('cupissa_favs', JSON.stringify(favorites));
+            clearTimeout(cupissaSaveTimer);
+            const userId = cupissaAccountId;
+            cupissaSaveTimer = setTimeout(async () => {
+                if (userId !== cupissaAccountId) return;
+                try {
+                    const { error } = await supabaseClient.from('cliente_catalogo_estado').upsert({
+                        auth_user_id:userId, carrito:cart, favoritos:favorites, updated_at:new Date().toISOString()
+                    }, { onConflict:'auth_user_id' });
+                    if (error) console.warn('[CUPISSA] No fue posible sincronizar la cuenta:',error.message);
+                } catch (error) { console.warn('[CUPISSA] Sincronización pendiente:',error); }
+            }, 450);
+        }
+        async function initializeCatalogAccountState() {
+            const revision = ++cupissaStateRevision;
+            try {
+                const { data } = await supabaseClient.auth.getSession();
+                const id = data?.session?.user?.id || null;
+                cupissaAccountId = id;
+                cupissaAccountReady = true;
+                cupissaLocalRestore();
+                if (!id) return { cart, favorites };
+                const { data: remote, error } = await supabaseClient.from('cliente_catalogo_estado')
+                    .select('carrito,favoritos').eq('auth_user_id',id).maybeSingle();
+                if (error) console.warn('[CUPISSA] Estado remoto no disponible:',error.message);
+                if (id !== cupissaAccountId || cupissaStateRevision !== revision) return {cart,favorites};
+                if (remote) {
+                    cart = Array.isArray(remote.carrito) ? remote.carrito : cart;
+                    favorites = Array.isArray(remote.favoritos) ? remote.favoritos : favorites;
+                    localStorage.setItem(cupissaScopedKey('cart'),JSON.stringify(cart));
+                    localStorage.setItem(cupissaScopedKey('favs'),JSON.stringify(favorites));
+                    localStorage.setItem('cupissa_cart',JSON.stringify(cart));
+                    localStorage.setItem('cupissa_favs',JSON.stringify(favorites));
+                    updateBadges(); syncCupissaFavoriteButtons();
+                }
+            } catch (error) { console.warn('[CUPISSA] Estado local disponible:',error); }
+            return {cart,favorites};
+        }
+        supabaseClient.auth.onAuthStateChange((event, session) => {
+            const nextId = session?.user?.id || null;
+            if (nextId === cupissaAccountId && cupissaAccountReady) return;
+            clearTimeout(cupissaSaveTimer);
+            cupissaAccountId = nextId;
+            cupissaAccountReady = !!nextId;
+            cupissaStateRevision++;
+            cupissaLocalRestore();
+            initializeCatalogAccountState();
+        });
+        window.addEventListener('storage', event => {
+            if (event.key?.startsWith('sb-') || event.key === 'cupissa_client_session') initializeCatalogAccountState();
+        });
         function saveCart() {
-            try {
-                localStorage.setItem('cupissa_cart', JSON.stringify(cart));
-            } catch (error) {
-                console.error('No fue posible guardar el carrito CUPISSA:', error);
-            }
-            updateBadges();
+            if (!cupissaRequireAccount()) return;
+            cupissaPersistState('cart'); updateBadges();
         }
-
         function saveFavorites() {
-            try {
-                localStorage.setItem('cupissa_favs', JSON.stringify(favorites));
-            } catch (error) {
-                console.error('No fue posible guardar los favoritos CUPISSA:', error);
-            }
-            updateBadges();
-            syncCupissaFavoriteButtons();
+            if (!cupissaRequireAccount()) return;
+            cupissaPersistState('favs'); updateBadges(); syncCupissaFavoriteButtons();
         }
 
         function updateBadges() {
@@ -170,6 +182,7 @@ function addModalProductToCart() {
 
         function toggleFavorite(prodId, e) {
             if (e) e.stopPropagation();
+            if (!cupissaRequireAccount()) return;
             const prod = rawProducts.find(p => String(p.id) === String(prodId));
             if (!prod) return;
             const idx = favorites.findIndex(f => String(f.id) === String(prodId));

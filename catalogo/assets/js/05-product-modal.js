@@ -35,7 +35,16 @@ function cupissaSelectColorForPhoto(product, photo) {
 let cupissaModalSizeQuantities = {};
 
 function cupissaGetProductSizes(product = selectedProductModal) {
-    return Array.isArray(product?.tallas) ? product.tallas.filter(size => size && String(size.nombre || '').trim()) : [];
+    const sizes = Array.isArray(product?.tallas) ? product.tallas.filter(size => size && String(size.nombre || '').trim()) : [];
+    const rank = value => {
+        const name = String(value || '').trim().toUpperCase();
+        const known = ['PREMATURO','RN','RECIÉN NACIDO','RECIEN NACIDO','XXXS','3XS','XXS','2XS','XS','S','M','L','XL','XXL','2XL','XXXL','3XL','4XL','5XL'];
+        const numeric = name.match(/^(?:TALLA\s*)?(\d+(?:[.,]\d+)?)(?:\s*(?:MESES|M|AÑOS|A))?$/);
+        if (numeric) return Number(numeric[1].replace(',','.'));
+        const index = known.indexOf(name);
+        return index === -1 ? 10000 : 1000 + index;
+    };
+    return sizes.slice().sort((a,b) => rank(a.nombre)-rank(b.nombre));
 }
 
 function cupissaGetSelectedSizeItems() {
@@ -122,7 +131,7 @@ function cupissaRenderSizeQuantityRows(product = selectedProductModal) {
         minus.type = 'button';
         minus.textContent = '−';
         minus.setAttribute('aria-label', `Disminuir cantidad de talla ${name}`);
-        minus.disabled = qty <= 0;
+        minus.disabled = qty <= 0 || (qty === 1 && totalSelected === 1);
 
         const value = document.createElement('span');
         value.className = 'cupissa-size-quantity-value';
@@ -172,6 +181,8 @@ function cupissaChangeSizeQuantity(sizeName, delta) {
         Number(cupissaModalSizeQuantities[key] || 0)
     );
 
+    if (Number(delta) < 0 && current <= 1 && cupissaGetSelectedSizeItems().reduce((sum, item) => sum + item.cantidad, 0) <= 1) return;
+
     cupissaModalSizeQuantities[key] = Math.max(
         0,
         current + Number(delta || 0)
@@ -190,7 +201,12 @@ function cupissaChangeSizeQuantity(sizeName, delta) {
         }
 
         if (buttons.length) {
-            buttons[0].disabled = cupissaModalSizeQuantities[key] <= 0;
+            buttons[0].disabled = cupissaModalSizeQuantities[key] <= 0 || (cupissaModalSizeQuantities[key] === 1 && cupissaGetSelectedSizeItems().reduce((sum, item) => sum + item.cantidad, 0) === 1);
+            document.querySelectorAll('.cupissa-size-select-row').forEach(otherRow => {
+                const minusButton = otherRow.querySelector('.cupissa-size-quantity-controls button');
+                const otherQty = Number(cupissaModalSizeQuantities[otherRow.dataset.size] || 0);
+                if (minusButton) minusButton.disabled = otherQty <= 0 || (otherQty === 1 && cupissaGetSelectedSizeItems().reduce((sum, item) => sum + item.cantidad, 0) === 1);
+            });
         }
     }
 
@@ -202,6 +218,7 @@ function openOptionsModal(prodId) {
             const prod = rawProducts.find(p => String(p.id) === String(prodId));
             if (!prod) return;
 
+            if (typeof window.cupissaRememberProductNavigation === 'function') window.cupissaRememberProductNavigation(String(prod.id));
             selectedProductModal = prod;
             if (typeof window.syncCupissaFavoriteButtons === 'function') window.syncCupissaFavoriteButtons();
             if (typeof window.registerCupissaProductOpen === 'function') {
@@ -322,6 +339,7 @@ function openOptionsModal(prodId) {
                 selectTalla.appendChild(opt);
                 cupissaModalSizeQuantities[name] = 0;
             });
+            if (availableSizes.length) cupissaModalSizeQuantities[String(availableSizes[0].nombre).trim()] = 1;
             selectTalla.value = availableSizes.length ? String(availableSizes[0].nombre).trim() : '';
             cupissaRenderSizeQuantityRows(prod);
 

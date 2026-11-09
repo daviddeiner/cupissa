@@ -4,6 +4,7 @@
  */
 
 function openFavoritesModal() {
+    if (!cupissaRequireAccount()) return;
             if (typeof closeProfileModal === 'function') closeProfileModal();
             // Permite alternar entre Favoritos y Carrito con la barra inferior
             // siempre visible y operativa, sin dejar dos paneles abiertos.
