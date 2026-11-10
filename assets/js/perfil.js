@@ -16,6 +16,30 @@
       : window.supabaseClient;
 
   const AUTH = () => window.CUPISSAAuth;
+  const AUTH_EXPECTED_BUILD = '"+version+"';
+
+  // Reparación selectiva de caché: si se sirvió un Auth antiguo, recuperarlo
+  // con URL nueva antes de solicitar el OTP. No altera sesiones ni usuarios.
+  let authReloadPromise = null;
+  async function ensureCurrentAuth() {
+    if (AUTH()?.build === AUTH_EXPECTED_BUILD) return AUTH();
+    if (!authReloadPromise) {
+      authReloadPromise = new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = '/shared/js/cupissa-auth.js?v=' + encodeURIComponent(AUTH_EXPECTED_BUILD);
+        script.async = true;
+        script.onload = () => AUTH()?.build === AUTH_EXPECTED_BUILD
+          ? resolve(AUTH())
+          : reject(new Error('El navegador sigue utilizando el código de autenticación anterior. Actualiza CUPISSA para continuar.'));
+        script.onerror = () => reject(new Error('No fue posible cargar el módulo de autenticación actualizado. Comprueba tu conexión.'));
+        document.head.appendChild(script);
+      }).catch(error => {
+        authReloadPromise = null;
+        throw error;
+      });
+    }
+    return authReloadPromise;
+  }
 
   const money = value =>
     '$ ' + new Intl.NumberFormat('es-CO').format(Number(value || 0));
@@ -491,6 +515,7 @@
     const button = $('profile-login-form')?.querySelector('button[type="submit"]');
     disableButton(button, true, 'Enviando código...');
     try {
+      await ensureCurrentAuth();
       await AUTH().sendEmailLoginOtp(email, new URL('/perfil/', location.origin).href);
       pendingEmailLogin = email;
       $('profile-email-login-destination').textContent = email;
@@ -844,18 +869,14 @@
     disableButton(button, true, 'Enviando código...');
 
     try {
-      const invited = await AUTH().checkPendingCustomerInvite(email, telefono);
-      if (!invited) {
-        await AUTH().checkPhoneAvailable(telefono);
-        await AUTH().checkEmailAvailable(email);
-      }
-
+      await ensureCurrentAuth();
+      // El propio Authentication determina si es registrado, invitado o nuevo.
+      // No se consulta cupissa-emails ni se filtran proveedores por dominio.
       const result = await AUTH().signUp({
         email,
         nombres,
         apellidos,
-        telefono,
-        invited
+        telefono
       });
 
       pendingSignup = {
@@ -947,22 +968,19 @@
         code
       );
 
-      // Una cuenta invitada ya puede tener su cliente CUPISSA asociado.
-      // No duplicar esa ficha después de verificar el código.
-      let verifiedLinked = await AUTH().getLinkedAccount();
-      if (!verifiedLinked?.client) {
+      // Si ya es un cliente invitado, reutilizar su ficha. No crear duplicados.
+      let linked = await AUTH().getLinkedAccount();
+      if (!linked?.client) {
         await AUTH().createNewClient({
           telefono: pendingSignup.telefono,
           nombres: pendingSignup.nombres,
           apellidos: pendingSignup.apellidos
         });
-        verifiedLinked = await AUTH().getLinkedAccount();
+        linked = await AUTH().getLinkedAccount();
       }
 
       sessionStorage.removeItem('cupissa_pending_signup');
       pendingSignup = null;
-
-      const linked = verifiedLinked;
 
       if (!linked?.client) {
         throw new Error(

@@ -19,6 +19,7 @@
     return;
   }
 
+  const AUTH_BUILD = '20261110-auth-otp-causa-real-v8';
   const REDIRECT_URL = new URL('/perfil/', window.location.origin).toString();
 
   const DUPLICATE_PHONE =
@@ -117,7 +118,36 @@
       return 'Escribe un correo electrónico válido.';
     }
 
-    return 'No fue posible completar la operación. Verifica los datos e inténtalo nuevamente.';
+    // La cuenta NO se comprueba desde una tabla pública; Auth reconoce el correo.
+    // Mostrar el error real de la API impide diagnosticar erróneamente como "no existe".
+    if (code === 'email_address_not_authorized') {
+      return 'Supabase no permite enviar a este correo con el proveedor SMTP actual. Configura el SMTP del proyecto (email_address_not_authorized).';
+    }
+    if (code === 'otp_disabled') {
+      return 'El acceso OTP está deshabilitado en Supabase Authentication (otp_disabled).';
+    }
+    if (code === 'email_provider_disabled' || code === 'provider_disabled') {
+      return 'El proveedor Email está deshabilitado en Supabase Authentication (' + code + ').';
+    }
+    if (code === 'over_email_send_rate_limit' || code === 'over_request_rate_limit' || code === '429' || Number(error?.status) === 429) {
+      return 'Supabase limitó temporalmente los envíos de OTP. Espera para volver a solicitar el código (' + (code || 'HTTP 429') + ').';
+    }
+    if (code === 'email_not_confirmed') {
+      return 'El correo todavía no está confirmado. Solicita el código desde el registro y verifica el OTP (email_not_confirmed).';
+    }
+    if (code === 'user_not_found' || code === 'signup_disabled') {
+      return 'Supabase no reconoce este correo como cuenta disponible para iniciar sesión (' + code + ').';
+    }
+    if (message.includes('smtp') || message.includes('error sending') || message.includes('sending email')) {
+      return 'El servicio SMTP no pudo enviar el OTP: ' + String(error?.message || code).slice(0, 180);
+    }
+    if (message.includes('failed to fetch') || message.includes('network request failed')) {
+      return 'No se logró conectar a Supabase Authentication. Comprueba la conexión y vuelve a intentarlo.';
+    }
+    // Nunca ocultar una respuesta de Supabase tras el texto genérico anterior.
+    const description = String(error?.message || error?.details || error?.hint || error?.name || 'Sin descripción del servidor').slice(0, 200);
+    const diagnostic = [code && `código ${code}`, Number(error?.status) && `HTTP ${error.status}`].filter(Boolean).join(', ');
+    return `Supabase Authentication: ${description}${diagnostic ? ` (${diagnostic})` : ''}`;
   }
 
   function throwFriendly(error) {
@@ -290,22 +320,9 @@
     return true;
   }
 
-  // Permite continuar un registro de cliente invitado, manteniendo las
-  // comprobaciones de duplicados para los demás registros.
-  async function checkPendingCustomerInvite(email, phone) {
-    const correo = validateEmail(email);
-    const telefono = cleanPhone(phone).replace(/\D/g, '').slice(-10);
-    if (telefono.length < 7) return false;
-    const { data, error } = await db.functions.invoke('cupissa-emails', {
-      body: { action: 'check_pending_customer_invite', email: correo, telefono }
-    });
-    // Si la función no está desplegada, no se omiten controles de duplicados.
-    if (error || !data || data.ok !== true) {
-      console.warn('[CUPISSA AUTH] No fue posible comprobar la invitación pendiente.', error || data);
-      return false;
-    }
-    return data.result?.eligible === true;
-  }
+  // El OTP se solicita directamente al servicio Auth de Supabase.
+  // No se consulta la Edge Function ni se enumera la lista privada de usuarios.
+  // La comprobación de titularidad ocurre al verificar el código recibido.
 
   /* ============================================================
      REGISTRO TRADICIONAL
@@ -317,8 +334,7 @@
     email,
     nombres,
     apellidos,
-    telefono,
-    invited = false
+    telefono
   }) {
     const correo = validateEmail(email);
     const celular = cleanPhone(telefono);
@@ -335,14 +351,9 @@
       throw new Error('Ingresa tu número de teléfono.');
     }
 
-    // Solo una invitación pendiente verificada contra clientes_web/Auth
-    // permite conservar la ficha existente y solicitar el OTP.
-    const pendingInvite = invited === true &&
-      await checkPendingCustomerInvite(correo, celular);
-    if (!pendingInvite) {
-      await checkPhoneAvailable(celular);
-      await checkEmailAvailable(correo);
-    }
+    // No impedir el OTP a usuarios precreados/invitados en Authentication.
+    // La validación de duplicados comerciales no corresponde a esta etapa:
+    // se resuelve después de verificar que el correo pertenece al solicitante.
 
     const { data, error } = await db.auth.signInWithOtp({
       email: correo,
@@ -828,12 +839,12 @@
      ============================================================ */
 
   window.CUPISSAAuth = {
+    build: AUTH_BUILD,
     getCurrentUser,
     getLinkedAccount,
 
     checkPhoneAvailable,
     checkEmailAvailable,
-    checkPendingCustomerInvite,
 
     signUp,
     verifySignupOtp,
