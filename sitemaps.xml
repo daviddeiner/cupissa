@@ -730,6 +730,12 @@
     </image:image>
   </url>
   <url>
+    <loc>https://cupissa.com/producto/2a715474-dcb2-43dc-8471-27024c968052/</loc>
+    <image:image>
+      <image:loc>https://lkdxtesgwqoizobxaawp.supabase.co/storage/v1/object/public/productos-cupissa/products/1794283544760_dcarcf2.jpg</image:loc>
+    </image:image>
+  </url>
+  <url>
     <loc>https://cupissa.com/producto/2a818288-aa09-4ec5-9dee-75a3f22e9fbd/</loc>
     <image:image>
       <image:loc>https://lkdxtesgwqoizobxaawp.supabase.co/storage/v1/object/public/productos-cupissa/products/1794266074038_3ch9qr5.jpg</image:loc>
@@ -772,6 +778,18 @@
     </image:image>
   </url>
   <url>
+    <loc>https://cupissa.com/producto/2b761dc5-71e4-4345-8328-ac7da6df6ee4/</loc>
+    <image:image>
+      <image:loc>https://lkdxtesgwqoizobxaawp.supabase.co/storage/v1/object/public/productos-cupissa/products/1794283779140_kbam0bt.jpg</image:loc>
+    </image:image>
+    <image:image>
+      <image:loc>https://lkdxtesgwqoizobxaawp.supabase.co/storage/v1/object/public/productos-cupissa/products/1794283779197_na9qczw.jpg</image:loc>
+    </image:image>
+    <image:image>
+      <image:loc>https://lkdxtesgwqoizobxaawp.supabase.co/storage/v1/object/public/productos-cupissa/products/1794283779237_c8iuh2c.jpg</image:loc>
+    </image:image>
+  </url>
+  <url>
     <loc>https://cupissa.com/producto/2b7a3262-ee73-4bc5-a7b9-e3a6c30fe7bd/</loc>
     <image:image>
       <image:loc>https://lkdxtesgwqoizobxaawp.supabase.co/storage/v1/object/public/productos-cupissa/products/1794170937395_lyu62yr.jpg</image:loc>
@@ -784,9 +802,21 @@
     </image:image>
   </url>
   <url>
+    <loc>https://cupissa.com/producto/2bfa1cbb-6fa3-4b6d-862e-37977e54fff5/</loc>
+    <image:image>
+      <image:loc>https://lkdxtesgwqoizobxaawp.supabase.co/storage/v1/object/public/productos-cupissa/products/1794282671141_bd8ck6j.jpg</image:loc>
+    </image:image>
+  </url>
+  <url>
     <loc>https://cupissa.com/producto/2c0e6916-8731-482d-84fd-40fe2cc723e8/</loc>
     <image:image>
       <image:loc>https://lkdxtesgwqoizobxaawp.supabase.co/storage/v1/object/public/productos-cupissa/products/1794173606194_kpa5g3w.jpg</image:loc>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://cupissa.com/producto/2c1d1891-8f53-48db-be6e-891f6751dd30/</loc>
+    <image:image>
+      <image:loc>https://lkdxtesgwqoizobxaawp.supabase.co/storage/v1/object/public/productos-cupissa/products/1794284357999_t9wi47n.jpg</image:loc>
     </image:image>
   </url>
   <url>
@@ -1279,6 +1309,15 @@
     </image:image>
   </url>
   <url>
+    <loc>https://cupissa.com/producto/49d77ee8-15e0-4510-902f-99dee5dd7844/</loc>
+    <image:image>
+      <image:loc>https://lkdxtesgwqoizobxaawp.supabase.co/storage/v1/object/public/productos-cupissa/products/1794283231642_poong0i.jpg</image:loc>
+    </image:image>
+    <image:image>
+      <image:loc>https://lkdxtesgwqoizobxaawp.supabase.co/storage/v1/object/public/productos-cupissa/products/1794283231596_i2m2x0c.jpg</image:loc>
+    </image:image>
+  </url>
+  <url>
     <loc>https://cupissa.com/producto/49ef9f1a-6950-400a-8cc4-c17b46632fc3/</loc>
     <image:image>
       <image:loc>https://lkdxtesgwqoizobxaawp.supabase.co/storage/v1/object/public/productos-cupissa/products/1794173357749_zgc1m2r.jpg</image:loc>
@@ -1363,6 +1402,15 @@
     </image:image>
   </url>
   <url>
+    <loc>https://cupissa.com/producto/4e9b4b6a-cd1a-4958-88b5-7197d233fea7/</loc>
+    <image:image>
+      <image:loc>https://lkdxtesgwqoizobxaawp.supabase.co/storage/v1/object/public/productos-cupissa/products/1794282787742_syzuqnf.jpg</image:loc>
+    </image:image>
+    <image:image>
+      <image:loc>https://lkdxtesgwqoizobxaawp.supabase.co/storage/v1/object/public/productos-cupissa/products/1794282787752_n4rtj1i.jpg</image:loc>
+    </image:image>
+  </url>
+  <url>
     <loc>https://cupissa.com/producto/4eba6dfd-0fae-435a-a9de-aab105c24f90/</loc>
     <image:image>
       <image:loc>https://lkdxtesgwqoizobxaawp.supabase.co/storage/v1/object/public/productos-cupissa/products/1794170628007_7nntjwe.jpg</image:loc>
@@ -1390,6 +1438,15 @@
     <loc>https://cupissa.com/producto/502802a0-3084-4afb-b74d-932ae4bad8f3/</loc>
     <image:image>
       <image:loc>https://lkdxtesgwqoizobxaawp.supabase.co/storage/v1/object/public/productos-cupissa/products/1794110863824_5xand68.jpg</image:loc>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://cupissa.com/producto/502d5b2f-d2ee-493f-b3bb-f951be1f71cc/</loc>
+    <image:image>
+      <image:loc>https://lkdxtesgwqoizobxaawp.supabase.co/storage/v1/object/public/productos-cupissa/products/1794283660957_iq6rfng.jpg</image:loc>
+    </image:image>
+    <image:image>
+      <image:loc>https://lkdxtesgwqoizobxaawp.supabase.co/storage/v1/object/public/productos-cupissa/products/1794283661003_sitiwnm.jpg</image:loc>
     </image:image>
   </url>
   <url>
@@ -2143,6 +2200,12 @@
     </image:image>
   </url>
   <url>
+    <loc>https://cupissa.com/producto/7908f433-f55e-45fe-9377-e61209693da2/</loc>
+    <image:image>
+      <image:loc>https://lkdxtesgwqoizobxaawp.supabase.co/storage/v1/object/public/productos-cupissa/products/1794284266518_jjidn38.jpg</image:loc>
+    </image:image>
+  </url>
+  <url>
     <loc>https://cupissa.com/producto/7946974a-f30e-4cec-b770-63add66b133c/</loc>
     <image:image>
       <image:loc>https://lkdxtesgwqoizobxaawp.supabase.co/storage/v1/object/public/productos-cupissa/products/1794170628522_afktf9r.jpg</image:loc>
@@ -2494,6 +2557,15 @@
     </image:image>
   </url>
   <url>
+    <loc>https://cupissa.com/producto/8b1d1055-4929-4939-b689-c3f0d232ad9d/</loc>
+    <image:image>
+      <image:loc>https://lkdxtesgwqoizobxaawp.supabase.co/storage/v1/object/public/productos-cupissa/products/1794283231596_i2m2x0c.jpg</image:loc>
+    </image:image>
+    <image:image>
+      <image:loc>https://lkdxtesgwqoizobxaawp.supabase.co/storage/v1/object/public/productos-cupissa/products/1794283231642_poong0i.jpg</image:loc>
+    </image:image>
+  </url>
+  <url>
     <loc>https://cupissa.com/producto/8bd9b8c0-8a34-45bc-bfd6-0ddd4ef07ea2/</loc>
     <image:image>
       <image:loc>https://lkdxtesgwqoizobxaawp.supabase.co/storage/v1/object/public/productos-cupissa/products/1794259921871_65jz47i.jpg</image:loc>
@@ -2755,6 +2827,15 @@
     </image:image>
   </url>
   <url>
+    <loc>https://cupissa.com/producto/9a8736d1-f0a8-4c81-bd58-c3d52493c05b/</loc>
+    <image:image>
+      <image:loc>https://lkdxtesgwqoizobxaawp.supabase.co/storage/v1/object/public/productos-cupissa/products/1794283323000_rme1q7j.jpg</image:loc>
+    </image:image>
+    <image:image>
+      <image:loc>https://lkdxtesgwqoizobxaawp.supabase.co/storage/v1/object/public/productos-cupissa/products/1794283323044_2mqnt0u.jpg</image:loc>
+    </image:image>
+  </url>
+  <url>
     <loc>https://cupissa.com/producto/9a8ef83b-f342-4734-8b6a-18d5668b6ede/</loc>
     <image:image>
       <image:loc>https://lkdxtesgwqoizobxaawp.supabase.co/storage/v1/object/public/productos-cupissa/products/1794175728345_j38w942.jpg</image:loc>
@@ -2866,6 +2947,15 @@
     <loc>https://cupissa.com/producto/a1f143f0-07a6-42bb-9d45-66d9b273b098/</loc>
     <image:image>
       <image:loc>https://lkdxtesgwqoizobxaawp.supabase.co/storage/v1/object/public/productos-cupissa/products/1794176219137_2a87tmq.jpg</image:loc>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://cupissa.com/producto/a2049305-96c2-4e88-9cb8-36b9a7752e3c/</loc>
+    <image:image>
+      <image:loc>https://lkdxtesgwqoizobxaawp.supabase.co/storage/v1/object/public/productos-cupissa/products/1794282787752_n4rtj1i.jpg</image:loc>
+    </image:image>
+    <image:image>
+      <image:loc>https://lkdxtesgwqoizobxaawp.supabase.co/storage/v1/object/public/productos-cupissa/products/1794282787742_syzuqnf.jpg</image:loc>
     </image:image>
   </url>
   <url>
@@ -3472,6 +3562,15 @@
     </image:image>
   </url>
   <url>
+    <loc>https://cupissa.com/producto/bdf62d10-f56c-4790-9455-4a32ff4ffb4c/</loc>
+    <image:image>
+      <image:loc>https://lkdxtesgwqoizobxaawp.supabase.co/storage/v1/object/public/productos-cupissa/products/1794283447200_ay1j4fy.jpg</image:loc>
+    </image:image>
+    <image:image>
+      <image:loc>https://lkdxtesgwqoizobxaawp.supabase.co/storage/v1/object/public/productos-cupissa/products/1794283447237_dj9isy8.jpg</image:loc>
+    </image:image>
+  </url>
+  <url>
     <loc>https://cupissa.com/producto/bdf99b86-828c-4dec-990b-8170bf7301e7/</loc>
     <image:image>
       <image:loc>https://lkdxtesgwqoizobxaawp.supabase.co/storage/v1/object/public/productos-cupissa/products/1794266993635_u1dcz1t.jpg</image:loc>
@@ -3952,6 +4051,15 @@
     </image:image>
   </url>
   <url>
+    <loc>https://cupissa.com/producto/d7db4961-89a7-45df-ae08-32778b5fd851/</loc>
+    <image:image>
+      <image:loc>https://lkdxtesgwqoizobxaawp.supabase.co/storage/v1/object/public/productos-cupissa/products/1794283447237_dj9isy8.jpg</image:loc>
+    </image:image>
+    <image:image>
+      <image:loc>https://lkdxtesgwqoizobxaawp.supabase.co/storage/v1/object/public/productos-cupissa/products/1794283447200_ay1j4fy.jpg</image:loc>
+    </image:image>
+  </url>
+  <url>
     <loc>https://cupissa.com/producto/da4f941b-cfb6-4107-82be-6ae4af804a03/</loc>
     <image:image>
       <image:loc>https://lkdxtesgwqoizobxaawp.supabase.co/storage/v1/object/public/productos-cupissa/products/1794170931996_awa7fyl.jpg</image:loc>
@@ -4276,6 +4384,15 @@
     <loc>https://cupissa.com/producto/e9587e64-5258-49a0-b5b6-b79e2293fbf0/</loc>
     <image:image>
       <image:loc>https://lkdxtesgwqoizobxaawp.supabase.co/storage/v1/object/public/productos-cupissa/products/1794176442184_28jluvz.jpg</image:loc>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://cupissa.com/producto/e9682217-3769-4a66-a7c1-fe5b1310dfb3/</loc>
+    <image:image>
+      <image:loc>https://lkdxtesgwqoizobxaawp.supabase.co/storage/v1/object/public/productos-cupissa/products/1794283661003_sitiwnm.jpg</image:loc>
+    </image:image>
+    <image:image>
+      <image:loc>https://lkdxtesgwqoizobxaawp.supabase.co/storage/v1/object/public/productos-cupissa/products/1794283660957_iq6rfng.jpg</image:loc>
     </image:image>
   </url>
   <url>
