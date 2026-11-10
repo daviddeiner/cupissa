@@ -1,5 +1,5 @@
 /* CUPISSA | PWA Service Worker. Versionar esta constante cuando se publiquen cambios. */
-const CUPISSA_CACHE = 'cupissa-app-shell-20261110-auth-otp-causa-real-v8';
+const CUPISSA_CACHE = 'cupissa-app-shell-20261110-otp-original-login-invitados-v6';
 const CUPISSA_CACHE_PREFIX = 'cupissa-app-shell-';
 const CUPISSA_ASSETS = [
   'index.html',
@@ -46,8 +46,8 @@ const CUPISSA_ASSETS = [
   'assets/css/checkout.css',
   'assets/js/checkout.js?v=20261110-deposito-2',
   'assets/css/perfil.css?v=20261108-nota-cliente-v1',
-  'assets/js/perfil.js?v=20261110-auth-otp-causa-real-v8',
-  'shared/js/cupissa-auth.js?v=20261110-auth-otp-causa-real-v8',
+  'assets/js/perfil.js?v=20261110-otp-original-login-invitados-v6',
+  'shared/js/cupissa-auth.js?v=20261110-otp-original-login-invitados-v6',
   'shared/js/supabase-config.js',
   'portal-pagos/index.html',
   'portal-pagos/assets/css/portal.css',
@@ -122,12 +122,6 @@ self.addEventListener('fetch', event => {
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
   if (url.pathname.includes('/rest/v1/') || url.pathname.includes('/storage/v1/') || url.pathname.includes('/functions/v1/')) return;
-
-  // Evitar el fallback a un cupissa-auth.js antiguo: auth requiere red.
-  if (url.pathname === '/shared/js/cupissa-auth.js' || url.pathname === '/assets/js/perfil.js') {
-    event.respondWith(fetch(new Request(request, { cache: 'no-store' })).catch(() => Response.error()));
-    return;
-  }
 
   if (request.mode === 'navigate') {
     event.respondWith((async () => {

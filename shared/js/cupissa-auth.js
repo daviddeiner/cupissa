@@ -19,7 +19,6 @@
     return;
   }
 
-  const AUTH_BUILD = '20261110-auth-otp-causa-real-v8';
   const REDIRECT_URL = new URL('/perfil/', window.location.origin).toString();
 
   const DUPLICATE_PHONE =
@@ -118,36 +117,17 @@
       return 'Escribe un correo electrónico válido.';
     }
 
-    // La cuenta NO se comprueba desde una tabla pública; Auth reconoce el correo.
-    // Mostrar el error real de la API impide diagnosticar erróneamente como "no existe".
-    if (code === 'email_address_not_authorized') {
-      return 'Supabase no permite enviar a este correo con el proveedor SMTP actual. Configura el SMTP del proyecto (email_address_not_authorized).';
+    if (message.includes('user not found') || message.includes('signups not allowed')) {
+      return 'Supabase no permitió solicitar este OTP. Comprueba el estado del usuario y las opciones de acceso en Authentication.';
     }
-    if (code === 'otp_disabled') {
-      return 'El acceso OTP está deshabilitado en Supabase Authentication (otp_disabled).';
-    }
-    if (code === 'email_provider_disabled' || code === 'provider_disabled') {
-      return 'El proveedor Email está deshabilitado en Supabase Authentication (' + code + ').';
-    }
-    if (code === 'over_email_send_rate_limit' || code === 'over_request_rate_limit' || code === '429' || Number(error?.status) === 429) {
-      return 'Supabase limitó temporalmente los envíos de OTP. Espera para volver a solicitar el código (' + (code || 'HTTP 429') + ').';
-    }
-    if (code === 'email_not_confirmed') {
-      return 'El correo todavía no está confirmado. Solicita el código desde el registro y verifica el OTP (email_not_confirmed).';
-    }
-    if (code === 'user_not_found' || code === 'signup_disabled') {
-      return 'Supabase no reconoce este correo como cuenta disponible para iniciar sesión (' + code + ').';
+    if (message.includes('email rate limit') || message.includes('over_email_send_rate_limit')) {
+      return 'Supabase limitó el envío de correos. Intenta nuevamente cuando se restablezca el límite.';
     }
     if (message.includes('smtp') || message.includes('error sending') || message.includes('sending email')) {
-      return 'El servicio SMTP no pudo enviar el OTP: ' + String(error?.message || code).slice(0, 180);
+      return 'El servidor de correo de Supabase no pudo enviar el OTP. Revisa la configuración SMTP.';
     }
-    if (message.includes('failed to fetch') || message.includes('network request failed')) {
-      return 'No se logró conectar a Supabase Authentication. Comprueba la conexión y vuelve a intentarlo.';
-    }
-    // Nunca ocultar una respuesta de Supabase tras el texto genérico anterior.
-    const description = String(error?.message || error?.details || error?.hint || error?.name || 'Sin descripción del servidor').slice(0, 200);
-    const diagnostic = [code && `código ${code}`, Number(error?.status) && `HTTP ${error.status}`].filter(Boolean).join(', ');
-    return `Supabase Authentication: ${description}${diagnostic ? ` (${diagnostic})` : ''}`;
+    return error?.message ? `Error de autenticación: ${String(error.message).slice(0, 180)}` :
+      'No se recibió una respuesta válida de Supabase Authentication. Comprueba la conexión y la configuración de Auth.';
   }
 
   function throwFriendly(error) {
@@ -839,7 +819,6 @@
      ============================================================ */
 
   window.CUPISSAAuth = {
-    build: AUTH_BUILD,
     getCurrentUser,
     getLinkedAccount,
 
