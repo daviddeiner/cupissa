@@ -44,7 +44,7 @@ async function loadNextProductsBatch() {
 
 function catalogNearEnd() {
     const sentinel = document.getElementById('scroll-status-container');
-    return !!sentinel && sentinel.getBoundingClientRect().top < window.innerHeight + 1300;
+    return !!sentinel && sentinel.getBoundingClientRect().top < window.innerHeight + 2600;
 }
 function scheduleCatalogNearEnd() {
     if (productsAutoLoadTimer !== null || productsBatchPending || document.hidden) return;
@@ -62,7 +62,7 @@ function setupAutomaticProductLoading() {
     if (!sentinel) return;
     if ('IntersectionObserver' in window) {
         catalogScrollObserver = new IntersectionObserver(() => scheduleCatalogNearEnd(),
-            {rootMargin: '1300px 0px', threshold: 0});
+            {rootMargin: '2600px 0px', threshold: 0});
         catalogScrollObserver.observe(sentinel);
     } else {
         window.addEventListener('scroll', scheduleCatalogNearEnd, {passive: true});

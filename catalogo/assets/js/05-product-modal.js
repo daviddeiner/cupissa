@@ -118,7 +118,7 @@ function cupissaRenderSizeQuantityRows(product = selectedProductModal) {
         title.textContent = name;
 
         const extra = document.createElement('small');
-        extra.textContent = Number(size.incremento || 0) > 0
+        extra.textContent = selectedModalidad === 'alquiler' ? 'Sin incremento por talla' : Number(size.incremento || 0) > 0
             ? `+${formatCOP(Number(size.incremento || 0))} por unidad`
             : 'Precio estándar';
 
@@ -335,7 +335,7 @@ function openOptionsModal(prodId) {
                 const opt = document.createElement('option');
                 opt.value = name;
                 opt.dataset.inc = size.incremento || 0;
-                opt.innerText = Number(size.incremento || 0) > 0 ? `${name} (+${formatCOP(size.incremento)})` : name;
+                opt.innerText = selectedModalidad === 'venta' && Number(size.incremento || 0) > 0 ? `${name} (+${formatCOP(size.incremento)})` : name;
                 selectTalla.appendChild(opt);
                 cupissaModalSizeQuantities[name] = 0;
             });
@@ -578,6 +578,7 @@ function cupissaSelectedAccessories() {
 
         function setModalidad(mod) {
             selectedModalidad = mod;
+            cupissaRenderSizeQuantityRows();
             updateModalidadUI();
             recalculateProductPrice();
         }
@@ -599,6 +600,7 @@ function cupissaSelectedAccessories() {
 
         function closeOptionsModal() {
             document.getElementById('modal-product-options').classList.add('hidden');
+            if (typeof window.cupissaForgetProductNavigation === 'function') window.cupissaForgetProductNavigation();
         }
 
         function updateModalQty(delta) {
@@ -623,7 +625,7 @@ function cupissaSelectedAccessories() {
             let totalProduct = 0;
 
             if (hasSizeOptions) {
-                totalProduct = sizeItems.reduce((sum, item) => sum + (baseUnitPrice + item.incremento + colorExtra + accessoryExtra) * item.cantidad, 0);
+                totalProduct = sizeItems.reduce((sum, item) => sum + (baseUnitPrice + (selectedModalidad === 'venta' ? item.incremento : 0) + colorExtra + accessoryExtra) * item.cantidad, 0);
             } else {
                 totalProduct = (baseUnitPrice + colorExtra + accessoryExtra) * totalQty;
             }
@@ -639,8 +641,10 @@ function cupissaSelectedAccessories() {
             }
 
             const priceLabel = document.getElementById('opt-price-tag');
-            if (priceLabel) priceLabel.innerText = selectedModalidad === 'alquiler' ? 'Precio Alquiler' : (isMayorista ? 'Precio Mayorista' : 'Precio Detal');
-            document.getElementById('opt-modal-total-price').innerText = formatCOP(totalProduct);
+            if (priceLabel) priceLabel.innerText = selectedModalidad === 'alquiler' ? (Number(p.valor_deposito || 0) > 0 ? 'Alquiler + depósito reembolsable' : 'Precio Alquiler') : (isMayorista ? 'Precio Mayorista' : 'Precio Detal');
+            const refundableDeposit = selectedModalidad === 'alquiler'
+                ? Math.max(0, Number(p.valor_deposito || 0)) * totalQty : 0;
+            document.getElementById('opt-modal-total-price').innerText = formatCOP(totalProduct + refundableDeposit);
             document.getElementById('opt-anticipo-pct').innerText = pctAnticipo;
             document.getElementById('opt-anticipo-val').innerText = formatCOP(valAnticipo);
             if (hasSizeOptions) cupissaUpdateSizeQuantitySummary();

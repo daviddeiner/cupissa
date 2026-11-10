@@ -47,7 +47,7 @@ function addModalProductToCart() {
 
     const newItems = rows.map((row, index) => {
         const quantity = Math.max(1, Number(row.cantidad || 1));
-        const unitPrice = baseUnitPrice + Number(row.incremento || 0) + colorExtra + accessoryExtra;
+        const unitPrice = baseUnitPrice + (selectedModalidad === 'venta' ? Number(row.incremento || 0) : 0) + colorExtra + accessoryExtra;
         const lineTotal = unitPrice * quantity;
         return {
             cartId: `${selectedProductModal.id}_${Date.now()}_${index}_${Math.random().toString(36).slice(2, 6)}`,

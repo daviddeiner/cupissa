@@ -60,7 +60,7 @@ function catalogProductCard(prod, options = {}) {
             </div>
             <div class="p-2.5 sm:p-4 space-y-1 sm:space-y-2">
                 <span class="text-[9px] sm:text-[10px] font-black uppercase text-pink-600 tracking-wider">${(prod.temporadas?.length ? prod.temporadas : [prod.temporada]).filter(Boolean).join(' - ')}</span>
-                <h3 class="product-card-title font-extrabold text-slate-900 text-[10px] leading-snug sm:text-xs tracking-tight"><a data-cupissa-seo-link href="${productPermalink}" class="hover:text-pink-700 hover:underline" aria-label="Ver ficha de ${prod.nombre}">${prod.nombre}</a></h3>
+                <h3 class="product-card-title font-extrabold text-slate-900 text-[10px] leading-snug sm:text-xs tracking-tight"><a data-cupissa-seo-link href="${productPermalink}" title="${seoImageAlt}" class="hover:text-pink-700 hover:underline" aria-label="Ver ficha de ${prod.nombre}">${prod.nombre}</a></h3>
                 <div class="product-activity" data-activity-product="${String(prod.id)}" hidden aria-live="polite">
                     <span><i class="fa-regular fa-eye"></i><strong data-activity-viewers>20+</strong> personas viendo</span>
                     <small class="activity-disclaimer"></small>

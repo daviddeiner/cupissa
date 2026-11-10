@@ -105,8 +105,8 @@ function shuffleArray(array) {
             const base = () => supabaseClient.from('productos')
                 .select(CUPISSA_CATALOG_PRODUCT_FIELDS).eq('oculto', false);
             const [single, multiple] = await Promise.all([
-                base().ilike('temporada', season).limit(5),
-                base().contains('temporadas', [season]).limit(5)
+                base().ilike('temporada', season).limit(90),
+                base().contains('temporadas', [season]).limit(90)
             ]);
             if (single.error) console.warn('Temporada singular:', single.error);
             if (multiple.error) console.warn('Temporadas múltiples:', multiple.error);
@@ -114,8 +114,58 @@ function shuffleArray(array) {
             [...(single.data || []), ...(multiple.data || [])].forEach(row => {
                 if (row?.id != null) unique.set(String(row.id), row);
             });
-            return shuffleArray([...unique.values()]).slice(0, 5);
+            return selectVariedFeaturedProducts([...unique.values()], 5).map(p => p);
         }
+        // Leer etiquetas ligeras de todas las publicaciones para obtener representantes
+        // de cada mundo, categoría, subcategoría y temporada desde la primera carga.
+        async function fetchInitialTaxonomyRepresentatives(currentRows) {
+            const fields = 'id,mundo,mundos,categoria,categorias,subcategoria,subcategorias,temporada,temporadas';
+            const pages = catalogSupabasePageOffsets.slice();
+            const metadata = [];
+            let next = 0;
+            async function worker() {
+                while (next < pages.length) {
+                    const start = pages[next++];
+                    const { data, error } = await supabaseClient.from('productos')
+                        .select(fields).eq('oculto', false)
+                        .order('created_at', { ascending: false })
+                        .range(start, start + CUPISSA_CATALOG_PAGE_SIZE - 1);
+                    if (error) throw error;
+                    metadata.push(...(data || []));
+                }
+            }
+            try { await Promise.all(Array.from({length: Math.min(4, pages.length)}, worker)); }
+            catch (error) { console.warn('Representantes de filtros:', error); return []; }
+            const dimensions = [['mundo','mundos'],['categoria','categorias'],['subcategoria','subcategorias'],['temporada','temporadas']];
+            const tags = row => dimensions.map(([one,many]) => catalogDiversityValues(row,one,many));
+            const seen = dimensions.map(() => new Set());
+            const accept = row => tags(row).forEach((values, i) => values.forEach(value => seen[i].add(value)));
+            currentRows.forEach(accept);
+            const added = [];
+            const known = new Set(currentRows.map(row => String(row.id)));
+            const candidates = metadata.filter(row => row?.id != null && !known.has(String(row.id)));
+            while (candidates.length && added.length < CUPISSA_CATALOG_PAGE_SIZE) {
+                let bestIndex = -1, bestScore = 0;
+                candidates.forEach((row, index) => {
+                    const score = tags(row).reduce((sum, values, i) => sum + values.filter(value => !seen[i].has(value)).length * [8,5,4,3][i], 0);
+                    if (score > bestScore) {bestScore = score; bestIndex = index;}
+                });
+                if (bestIndex < 0) break;
+                const [row] = candidates.splice(bestIndex, 1);
+                added.push(row.id);
+                accept(row);
+            }
+            const full = [];
+            for (let i = 0; i < added.length; i += 100) {
+                const {data,error} = await supabaseClient.from('productos')
+                    .select(CUPISSA_CATALOG_PRODUCT_FIELDS).eq('oculto',false)
+                    .in('id', added.slice(i, i + 100));
+                if (error) { console.warn('Productos de filtros:',error); continue; }
+                full.push(...(data || []));
+            }
+            return full;
+        }
+
         let catalogRealtimeChannel = null;
         const catalogRealtimeQueue = [];
 
@@ -211,14 +261,15 @@ function shuffleArray(array) {
                         return (!response.error && response.data?.length) ? response.data[0] : null;
                     }));
                     const representatives = worldRows.filter(Boolean);
+                    const taxonomyRows = await fetchInitialTaxonomyRepresentatives([...rows, ...representatives]);
                     const featuredRows = await fetchInitialFeaturedSeasonRows();
                     // Mostrar los representantes desde la primera pantalla, no esperar
                     // a que la carga automática complete los primeros 10 elementos.
-                    displayLimit = Math.max(displayLimit, representatives.length + featuredRows.length);
+                    displayLimit = Math.max(displayLimit, representatives.length + taxonomyRows.length + featuredRows.length);
                     // Reservar siempre los cinco espacios de destacados y uno
                     // por mundo antes de completar el grupo con productos aleatorios.
                     const reserved = new Map();
-                    [...featuredRows, ...shuffleArray(representatives)].forEach(row => {
+                    [...featuredRows, ...shuffleArray(representatives), ...shuffleArray(taxonomyRows)].forEach(row => {
                         if (row?.id != null) reserved.set(String(row.id), row);
                     });
                     const rest = spreadCatalogDiversity(rows.filter(row => !reserved.has(String(row.id))));
@@ -530,6 +581,31 @@ function shuffleArray(array) {
         }
 
 
+function selectVariedFeaturedProducts(products, count = 5) {
+    const remaining = shuffleArray([...products]);
+    const selected = [];
+    const normalized = name => String(name || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().replace(/[^A-Z0-9 ]/g, ' ').split(/\s+/).filter(word => word.length > 2 && !['PARA','CON','LOS','LAS','DEL','UNA','UNO','CUPISSA','PERSONALIZADO','PERSONALIZADA'].includes(word));
+    const names = [];
+    while (remaining.length && selected.length < count) {
+        let best = 0, score = -Infinity;
+        remaining.forEach((product, index) => {
+            const words = new Set(normalized(product.nombre));
+            const similarity = Math.max(0, ...names.map(prior => {
+                const common = [...words].filter(word => prior.has(word)).length;
+                return common / Math.max(1, Math.min(words.size, prior.size));
+            }));
+            const diversity = [product.mundo, product.categoria, product.subcategoria].reduce((sum, value, i) =>
+                sum + (selected.some(item => String([item.mundo,item.categoria,item.subcategoria][i]) === String(value)) ? 0 : [8,6,4][i]), 0);
+            const candidateScore = diversity - similarity * 35 + Math.random() * .05;
+            if (candidateScore > score) { score = candidateScore; best = index; }
+        });
+        const [chosen] = remaining.splice(best, 1);
+        selected.push(chosen);
+        names.push(new Set(normalized(chosen.nombre)));
+    }
+    return selected;
+}
+
 function updateFeaturedSeasonProducts(forceShuffle = false) {
     const seasonal = rawProducts.filter(product => (product.temporadas || [product.temporada]).some(value => String(value || '').trim()));
     if (!seasonal.length) {
@@ -590,6 +666,6 @@ function updateFeaturedSeasonProducts(forceShuffle = false) {
     const group = seasonGroups.get(chosenName) || [];
     if (forceShuffle || chosenName !== featuredSeasonName || !featuredSeasonProducts.length) {
         featuredSeasonName = chosenName;
-        featuredSeasonProducts = shuffleArray([...group]).slice(0,5);
+        featuredSeasonProducts = selectVariedFeaturedProducts(group, 5);
     }
 }

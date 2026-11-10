@@ -9,7 +9,7 @@
     const clean = String(value || '/').replace(/\/index\.html$/i, '/');
     return clean.endsWith('/') ? clean : `${clean}/`;
   };
-  const isCatalogPage = () => normalizePath(window.location.pathname) === CATALOG_PATH;
+  const isCatalogPage = () => normalizePath(window.location.pathname) === CATALOG_PATH || history.state?.cupissaProductModal === true;
 
   function installBackGuard() {
     const path = normalizePath(window.location.pathname);
@@ -54,7 +54,8 @@
     window.scrollTo({ top:0, left:0, behavior:'auto' });
   }
 
-  // Modal product steps are history entries; product-to-product Back restores prior product.
+  // Solo existe un nivel de ficha: reemplazar al cambiar de tarjeta.
+  // Así Atrás nunca reabre productos que ya se habían cerrado.
   let activeProduct = null;
   let traversing = false;
   const catalogScroll = { y: 0 };
@@ -62,9 +63,17 @@
     if (!isCatalogPage() || traversing) return;
     const modal = document.getElementById('modal-product-options');
     if (!modal || modal.classList.contains('hidden')) catalogScroll.y = window.scrollY;
-    if (activeProduct === productId) return;
-    history.pushState({ ...(history.state || {}), cupissaProductId:productId }, '', location.pathname + location.search + location.hash);
-    activeProduct = productId;
+    if (activeProduct === String(productId)) return;
+    const url = `/producto/${encodeURIComponent(String(productId))}/`;
+    const state = { cupissaProductModal: true, cupissaProductId: String(productId) };
+    if (activeProduct || history.state?.cupissaProductModal) history.replaceState(state, '', url);
+    else history.pushState(state, '', url);
+    activeProduct = String(productId);
+  };
+  window.cupissaForgetProductNavigation = () => {
+    if (traversing || !activeProduct) return;
+    activeProduct = null;
+    if (history.state?.cupissaProductModal) history.replaceState({ cupissaCatalogHome: true }, '', CATALOG_PATH);
   };
   window.addEventListener('popstate', () => {
     if (isEmbedded) {
@@ -72,17 +81,11 @@
       return;
     }
     if (isCatalogPage()) {
-      const productId = history.state?.cupissaProductId || null;
-      if (productId && typeof window.openOptionsModal === 'function') {
-        traversing = true;
-        activeProduct = productId;
-        window.openOptionsModal(productId);
-        traversing = false;
-      } else {
-        activeProduct = null;
-        closeCatalogPanels();
-        requestAnimationFrame(() => window.scrollTo({ top:catalogScroll.y, behavior:'instant' }));
-      }
+      traversing = true;
+      activeProduct = null;
+      closeCatalogPanels();
+      traversing = false;
+      requestAnimationFrame(() => window.scrollTo({ top: catalogScroll.y, behavior: 'instant' }));
       return;
     }
     // Producto individual, Perfil, Portal, Checkout y demás páginas vuelven al catálogo.
