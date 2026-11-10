@@ -1,5 +1,5 @@
 /* CUPISSA | PWA Service Worker. Versionar esta constante cuando se publiquen cambios. */
-const CUPISSA_CACHE = 'cupissa-app-shell-20261110-deposito-2';
+const CUPISSA_CACHE = 'cupissa-app-shell-20261110-invitados-otp-v1';
 const CUPISSA_CACHE_PREFIX = 'cupissa-app-shell-';
 const CUPISSA_ASSETS = [
   'index.html',
@@ -46,8 +46,8 @@ const CUPISSA_ASSETS = [
   'assets/css/checkout.css',
   'assets/js/checkout.js?v=20261110-deposito-2',
   'assets/css/perfil.css?v=20261108-nota-cliente-v1',
-  'assets/js/perfil.js?v=20261108-nota-cliente-v1',
-  'shared/js/cupissa-auth.js?v=20261108-otp-universal-v4',
+  'assets/js/perfil.js?v=20261110-invitados-otp-v1',
+  'shared/js/cupissa-auth.js?v=20261110-invitados-otp-v1',
   'shared/js/supabase-config.js',
   'portal-pagos/index.html',
   'portal-pagos/assets/css/portal.css',
