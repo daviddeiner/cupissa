@@ -117,17 +117,13 @@
       return 'Escribe un correo electrónico válido.';
     }
 
-    if (message.includes('user not found') || message.includes('signups not allowed')) {
-      return 'Supabase no permitió solicitar este OTP. Comprueba el estado del usuario y las opciones de acceso en Authentication.';
+    if (message.includes('smtp') || message.includes('535') || message.includes('username and password not accepted') || message.includes('error sending') || message.includes('sending email')) {
+      return 'Supabase no pudo enviar el código por correo (SMTP). Revisa Authentication → SMTP Settings. Detalle: ' + (error?.message || 'Error de envío');
     }
-    if (message.includes('email rate limit') || message.includes('over_email_send_rate_limit')) {
-      return 'Supabase limitó el envío de correos. Intenta nuevamente cuando se restablezca el límite.';
+    if (message.includes('email rate limit exceeded')) {
+      return 'Supabase alcanzó el límite de envío de correos. Intenta nuevamente cuando se restablezca el límite.';
     }
-    if (message.includes('smtp') || message.includes('error sending') || message.includes('sending email')) {
-      return 'El servidor de correo de Supabase no pudo enviar el OTP. Revisa la configuración SMTP.';
-    }
-    return error?.message ? `Error de autenticación: ${String(error.message).slice(0, 180)}` :
-      'No se recibió una respuesta válida de Supabase Authentication. Comprueba la conexión y la configuración de Auth.';
+    return error?.message ? `Supabase: ${error.message}${error?.code ? ' (' + error.code + ')' : ''}` : 'No fue posible conectar con Supabase Authentication. Revisa la conexión.';
   }
 
   function throwFriendly(error) {
@@ -268,41 +264,31 @@
      COMPROBAR TELÉFONO REGISTRADO
      ============================================================ */
 
+  // Las políticas RLS de clientes y clientes_web impiden consultar datos
+  // privados antes de autenticar. Por tanto, estas validaciones solo se
+  // ejecutan DESPUÉS de acreditar la propiedad del correo mediante OTP.
   async function checkPhoneAvailable(phone) {
     const telefono = cleanPhone(phone);
-
-    if (!telefono) {
-      throw new Error('Ingresa tu número de teléfono.');
-    }
-
-    const { data, error } = await db
-      .from('clientes')
-      .select('id')
-      .eq('telefono', telefono)
-      .limit(1);
-
+    if (!telefono) throw new Error('Ingresa tu número de teléfono.');
+    const user = await getCurrentUser();
+    if (!user) throw new Error('Primero verifica el código enviado a tu correo.');
+    const { data, error } = await db.rpc('cupissa_check_registration_contact', { p_telefono: telefono });
     if (error) throwFriendly(error);
-
-    if (data && data.length > 0) {
-      throw new Error(DUPLICATE_PHONE);
-    }
-
+    if (data?.phone_used_by_other) throw new Error(DUPLICATE_PHONE);
+    if (data?.email_existing) throw new Error('Este correo ya existe en CUPISSA pero su perfil aún no está vinculado. Inicia sesión o solicita que se vincule tu cuenta; no se crearán datos duplicados.');
     return true;
   }
 
   async function checkEmailAvailable(email) {
     const correo = validateEmail(email);
-    for (const tabla of ['clientes_web', 'clientes']) {
-      const { data, error } = await db.from(tabla).select('id').ilike('correo', correo).limit(1);
-      if (error) throwFriendly(error);
-      if (data?.length) throw new Error('Este correo ya está registrado. Inicia sesión con tu código de acceso.');
+    const user = await getCurrentUser();
+    if (!user || cleanEmail(user.email) !== correo) {
+      throw new Error('Primero verifica tu correo mediante el código OTP.');
     }
-    return true;
+    const { data, error } = await db.rpc('cupissa_check_registration_contact', { p_telefono: null });
+    if (error) throwFriendly(error);
+    return !data?.email_existing;
   }
-
-  // El OTP se solicita directamente al servicio Auth de Supabase.
-  // No se consulta la Edge Function ni se enumera la lista privada de usuarios.
-  // La comprobación de titularidad ocurre al verificar el código recibido.
 
   /* ============================================================
      REGISTRO TRADICIONAL
@@ -331,10 +317,8 @@
       throw new Error('Ingresa tu número de teléfono.');
     }
 
-    // No impedir el OTP a usuarios precreados/invitados en Authentication.
-    // La validación de duplicados comerciales no corresponde a esta etapa:
-    // se resuelve después de verificar que el correo pertenece al solicitante.
-
+    // No consultar tablas protegidas antes del OTP. Supabase reconoce
+    // tanto cuentas confirmadas como cuentas Auth invitadas pendientes.
     const { data, error } = await db.auth.signInWithOtp({
       email: correo,
       options: { shouldCreateUser: true, emailRedirectTo: REDIRECT_URL,
@@ -434,7 +418,7 @@
     const { data, error } = await db.auth.signInWithOtp({
       email: correo,
       options: {
-        shouldCreateUser: false,
+        shouldCreateUser: true, // El usuario se vincula solo tras comprobar el correo y perfil.
         emailRedirectTo: redirectTo || REDIRECT_URL
       }
     });

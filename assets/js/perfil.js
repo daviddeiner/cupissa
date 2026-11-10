@@ -844,8 +844,7 @@
     disableButton(button, true, 'Enviando código...');
 
     try {
-      // Evitar bloquear a los usuarios de Authentication con invitación pendiente.
-      // La comprobación de duplicados para cuentas comerciales se hace tras el OTP.
+      // La validación de duplicados se hace después del OTP, con sesión verificada.
       const result = await AUTH().signUp({
         email,
         nombres,
@@ -942,19 +941,24 @@
         code
       );
 
-      // Si ya es un cliente invitado, reutilizar su ficha. No crear duplicados.
-      let linked = await AUTH().getLinkedAccount();
-      if (!linked?.client) {
+      // Si el correo ya pertenece a un cliente existente (incluido invitado
+      // creado por el administrador), entrar en esa ficha SIN duplicarla.
+      let alreadyLinked = await AUTH().getLinkedAccount();
+      if (!alreadyLinked?.client) {
+        // La cuenta está verificada. El RPC comprueba teléfonos en AMBAS
+        // tablas con privilegios de servidor, sin exponer registros ajenos.
+        await AUTH().checkPhoneAvailable(pendingSignup.telefono);
         await AUTH().createNewClient({
           telefono: pendingSignup.telefono,
           nombres: pendingSignup.nombres,
           apellidos: pendingSignup.apellidos
         });
-        linked = await AUTH().getLinkedAccount();
       }
 
       sessionStorage.removeItem('cupissa_pending_signup');
       pendingSignup = null;
+
+      const linked = await AUTH().getLinkedAccount();
 
       if (!linked?.client) {
         throw new Error(
