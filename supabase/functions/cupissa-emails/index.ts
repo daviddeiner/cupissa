@@ -171,18 +171,44 @@ async function sendCreditReminders() {
   return results;
 }
 
+// Los correos administrativos se solicitan con la sesión Supabase Auth del
+// administrador; las credenciales del mailer nunca se exponen al frontend.
+async function authorizeAdmin(req: Request) {
+  const token = (req.headers.get('authorization') || '').replace(/^Bearer\s+/i, '').trim();
+  if (!token) throw new Error('Falta la sesión del administrador.');
+  const { data, error } = await db.auth.getUser(token);
+  if (error || !data?.user) throw new Error('Sesión inválida o vencida.');
+  const allowedEmail = env('CUPISSA_ADMIN_EMAIL').trim().toLowerCase();
+  if (!allowedEmail) throw new Error('Falta configurar CUPISSA_ADMIN_EMAIL en Supabase.');
+  if (String(data.user.email || '').trim().toLowerCase() !== allowedEmail) {
+    throw new Error('No tienes permiso para enviar confirmaciones de pedidos administrativos.');
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors });
   if (req.method !== 'POST') return Response.json({ error: 'Método no permitido' }, { status: 405, headers: cors });
-  if (!env('CUPISSA_EMAIL_HOOK_SECRET') || req.headers.get('x-cupissa-hook-secret') !== env('CUPISSA_EMAIL_HOOK_SECRET')) {
-    return Response.json({ error: 'No autorizado' }, { status: 401, headers: cors });
-  }
   try {
     const body = await req.json();
     let result;
-    if (body.action === 'daily_credit_reminders') result = await sendCreditReminders();
-    else if (body.action === 'order_confirmation') result = await sendOrderConfirmation(body);
-    else return Response.json({ error: 'Acción no reconocida' }, { status: 400, headers: cors });
+    if (body.action === 'admin_order_confirmation') {
+      try { await authorizeAdmin(req); }
+      catch (error) { return Response.json({ error: String(error) }, { status: 403, headers: cors }); }
+      const orderId = String(body.order_id || '').trim();
+      if (!orderId || orderId.length > 128) return Response.json({ error: 'Identificador de pedido inválido.' }, { status: 400, headers: cors });
+      const { data: order, error: lookupError } = await db.from('pedidos_web').select('*').eq('id', orderId).maybeSingle();
+      if (lookupError) throw lookupError;
+      if (!order) return Response.json({ error: 'Pedido no encontrado.' }, { status: 404, headers: cors });
+      result = await sendOrderConfirmation({ source:'pedidos_web', record:order });
+    } else {
+      // Se preserva sin cambios el mecanismo interno de la web y recordatorios.
+      if (!env('CUPISSA_EMAIL_HOOK_SECRET') || req.headers.get('x-cupissa-hook-secret') !== env('CUPISSA_EMAIL_HOOK_SECRET')) {
+        return Response.json({ error: 'No autorizado' }, { status: 401, headers: cors });
+      }
+      if (body.action === 'daily_credit_reminders') result = await sendCreditReminders();
+      else if (body.action === 'order_confirmation') result = await sendOrderConfirmation(body);
+      else return Response.json({ error: 'Acción no reconocida' }, { status: 400, headers: cors });
+    }
     return Response.json({ ok: true, result }, { headers: cors });
   } catch (error) {
     console.error('[cupissa-emails]', error);

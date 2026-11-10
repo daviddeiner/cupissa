@@ -11,7 +11,7 @@ function shuffleArray(array) {
             return array;
         }
 
-        const CUPISSA_CATALOG_PAGE_SIZE = 200;
+        const CUPISSA_CATALOG_PAGE_SIZE = 500;
         // Diversidad editorial: evita secuencias extensas del mismo mundo,
         // categoría, subcategoría o temporada sin esconder publicaciones.
         // Opera en memoria sobre cada lote: no cambia SQL, precios ni filtros.
@@ -32,57 +32,64 @@ function shuffleArray(array) {
                 .filter(Boolean);
         }
 
+        // Mezcla equilibrada por TODAS las dimensiones, a través de todos los lotes.
+        // Evalúa candidatos acotados para evitar la búsqueda cuadrática costosa en móviles.
         function spreadCatalogDiversity(rows, preceding = []) {
-            const pending = shuffleArray([...rows]);
-            const result = [];
-            const recent = preceding.slice(-8);
             const dimensions = [
-                ['mundo', 'mundos', 12],
-                ['categoria', 'categorias', 7],
-                ['subcategoria', 'subcategorias', 5],
-                ['temporada', 'temporadas', 4]
+                ['mundo', 'mundos', 24],
+                ['categoria', 'categorias', 16],
+                ['subcategoria', 'subcategorias', 11],
+                ['temporada', 'temporadas', 8]
             ];
+            const describe = product => dimensions.map(([singular, plural]) =>
+                catalogDiversityValues(product, singular, plural));
+            const pending = shuffleArray(rows.map(row => ({ row, tags: describe(row) })));
             const counts = dimensions.map(() => new Map());
-            for (const existing of preceding) {
-                dimensions.forEach(([singular, plural], i) => {
-                    for (const value of new Set(catalogDiversityValues(existing, singular, plural))) {
-                        counts[i].set(value, (counts[i].get(value) || 0) + 1);
-                    }
-                });
-            }
+            const recent = preceding.slice(-20).map(describe);
+            const output = [];
+            // La frecuencia global limita los bloques monótonos incluso después de
+            // cientos de publicaciones; la cercanía penaliza categorías repetidas.
+            const register = tags => tags.forEach((values, d) => {
+                for (const value of new Set(values)) {
+                    counts[d].set(value, (counts[d].get(value) || 0) + 1);
+                }
+            });
+            preceding.forEach(product => register(describe(product)));
             while (pending.length) {
-                let bestIndex = 0;
-                let bestScore = Infinity;
-                for (let i = 0; i < pending.length; i++) {
-                    let score = Math.random() * 0.8;
-                    const candidate = pending[i];
-                    dimensions.forEach(([singular, plural, weight], d) => {
-                        const values = catalogDiversityValues(candidate, singular, plural);
+                const candidates = Math.min(42, pending.length);
+                let best = 0, bestScore = Infinity;
+                for (let i = 0; i < candidates; i++) {
+                    const tags = pending[i].tags;
+                    let score = Math.random() * 0.35;
+                    tags.forEach((values, d) => {
                         if (!values.length) return;
-                        score += Math.min(...values.map(v => counts[d].get(v) || 0)) * 0.20;
-                        recent.forEach((previous, distance) => {
-                            const other = catalogDiversityValues(previous, singular, plural);
-                            if (values.some(value => other.includes(value))) {
-                                score += weight / (recent.length - distance);
+                        score += Math.min(...values.map(value => counts[d].get(value) || 0)) * [0.55, 0.4, 0.3, 0.2][d];
+                        recent.forEach((other, position) => {
+                            if (values.some(value => other[d].includes(value))) {
+                                const distance = recent.length - position;
+                                score += dimensions[d][2] / Math.pow(distance, 0.72);
                             }
                         });
                     });
-                    if (score < bestScore) { bestScore = score; bestIndex = i; }
+                    if (score < bestScore) { bestScore = score; best = i; }
                 }
-                const [chosen] = pending.splice(bestIndex, 1);
-                result.push(chosen);
-                recent.push(chosen);
-                if (recent.length > 8) recent.shift();
-                dimensions.forEach(([singular, plural], d) => {
-                    for (const value of new Set(catalogDiversityValues(chosen, singular, plural))) {
-                        counts[d].set(value, (counts[d].get(value) || 0) + 1);
-                    }
-                });
+                const [chosen] = pending.splice(best, 1);
+                output.push(chosen.row);
+                register(chosen.tags);
+                recent.push(chosen.tags);
+                if (recent.length > 20) recent.shift();
+                // Barajar la ventana de candidatos a medida que avanza la selección.
+                // Así todo el lote compite, no solamente sus primeras filas.
+                if (pending.length > 42) {
+                    const from = Math.floor(Math.random() * (pending.length - 41)) + 41;
+                    const to = Math.floor(Math.random() * 42);
+                    [pending[from], pending[to]] = [pending[to], pending[from]];
+                }
             }
-            return result;
+            return output;
         }
 
-        // Todos los mundos representados en la primera carga de 200 productos.
+        // Todos los mundos representados en la primera carga de 500 productos.
         const CUPISSA_INITIAL_WORLDS = [
             'INFANTIL', 'DAMAS', 'CABALLEROS', 'HOGAR', 'PUBLICIDAD Y EVENTOS',
             'DETALLES', 'PERSONALIZADOS', 'CONFECCIONES', 'ACCESORIOS',
@@ -189,8 +196,9 @@ function shuffleArray(array) {
                         }
                     }
                     // Consultas paralelas: la primera muestra incluye 1 producto de cada
-                    // mundo con publicaciones disponibles, incluso fuera del rango de 200.
+                    // mundo con publicaciones disponibles, incluso fuera del rango de 500.
                     const worldRows = await Promise.all(CUPISSA_INITIAL_WORLDS.map(async world => {
+                        if (rows.some(row => catalogDiversityValues(row, 'mundo', 'mundos').includes(world))) return null;
                         let response = await supabaseClient.from('productos')
                             .select(CUPISSA_CATALOG_PRODUCT_FIELDS)
                             .eq('oculto', false).eq('mundo', world)
@@ -213,7 +221,7 @@ function shuffleArray(array) {
                     [...featuredRows, ...shuffleArray(representatives)].forEach(row => {
                         if (row?.id != null) reserved.set(String(row.id), row);
                     });
-                    const rest = shuffleArray(rows.filter(row => !reserved.has(String(row.id))));
+                    const rest = spreadCatalogDiversity(rows.filter(row => !reserved.has(String(row.id))));
                     selectedRows = [
                         ...reserved.values(),
                         ...rest.slice(0, Math.max(0, CUPISSA_CATALOG_PAGE_SIZE - reserved.size))

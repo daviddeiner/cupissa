@@ -1220,3 +1220,10 @@ body.profile-open #mobile-app-nav { display: flex !important; z-index: 9999; pos
 /* Los mundos del panel duplicado existen solo en el panel de filtros móvil. */
 .mobile-worlds-in-drawer{display:none}
 @media(max-width:767px){.mobile-worlds-in-drawer{display:block}}
+
+/* Reducir trabajo fuera de pantalla sin modificar tamaños, interacciones ni scroll móvil. */
+@media (min-width:768px) {
+  #products-grid > [data-cupissa-product-id] {content-visibility:auto;contain-intrinsic-size:auto 450px;}
+}
+#products-grid, #season-featured-grid {scroll-behavior:auto;}
+#products-grid .product-card-photo, #season-featured-grid .product-card-photo {will-change:auto;}
