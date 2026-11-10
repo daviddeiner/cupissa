@@ -844,14 +844,18 @@
     disableButton(button, true, 'Enviando código...');
 
     try {
-      await AUTH().checkPhoneAvailable(telefono);
-      await AUTH().checkEmailAvailable(email);
+      const invited = await AUTH().checkPendingCustomerInvite(email, telefono);
+      if (!invited) {
+        await AUTH().checkPhoneAvailable(telefono);
+        await AUTH().checkEmailAvailable(email);
+      }
 
       const result = await AUTH().signUp({
         email,
         nombres,
         apellidos,
-        telefono
+        telefono,
+        invited
       });
 
       pendingSignup = {
@@ -943,16 +947,22 @@
         code
       );
 
-      await AUTH().createNewClient({
-        telefono: pendingSignup.telefono,
-        nombres: pendingSignup.nombres,
-        apellidos: pendingSignup.apellidos
-      });
+      // Una cuenta invitada ya puede tener su cliente CUPISSA asociado.
+      // No duplicar esa ficha después de verificar el código.
+      let verifiedLinked = await AUTH().getLinkedAccount();
+      if (!verifiedLinked?.client) {
+        await AUTH().createNewClient({
+          telefono: pendingSignup.telefono,
+          nombres: pendingSignup.nombres,
+          apellidos: pendingSignup.apellidos
+        });
+        verifiedLinked = await AUTH().getLinkedAccount();
+      }
 
       sessionStorage.removeItem('cupissa_pending_signup');
       pendingSignup = null;
 
-      const linked = await AUTH().getLinkedAccount();
+      const linked = verifiedLinked;
 
       if (!linked?.client) {
         throw new Error(
