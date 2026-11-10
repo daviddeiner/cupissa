@@ -803,6 +803,7 @@ async function createWebPayment(db: any, body: any) {
   let saleTotal = 0;
   let saleAdvance = 0;
   let rentalTotal = 0;
+  let rentalDepositTotal = 0;
   let rentalAdvance = 0;
 
   let saleUnits = 0;
@@ -878,7 +879,7 @@ async function createWebPayment(db: any, body: any) {
       initialUnit = Number(product.precio_mayorista);
     }
 
-    initialUnit += optionExtra(
+    if (!rental) initialUnit += optionExtra(
       product.tallas,
       String(item.talla || "")
     );
@@ -950,7 +951,7 @@ async function createWebPayment(db: any, body: any) {
       anticipo_calculado: lineAdvance,
       dias_alquiler: rental ? rentalDays : 0,
       deposito_alquiler: rental
-        ? Number(product.valor_deposito || 0) * quantity
+        ? Math.max(0, Number(product.valor_deposito || 0)) * quantity
         : 0,
       imagen_url: photos[0] || "",
       imagenes: photos,
@@ -958,6 +959,7 @@ async function createWebPayment(db: any, body: any) {
 
     if (rental) {
       rentalTotal += lineTotal;
+      rentalDepositTotal += line.deposito_alquiler;
       rentalAdvance += lineAdvance;
       rentalLines.push(line);
     } else {
@@ -975,7 +977,10 @@ async function createWebPayment(db: any, body: any) {
   }
 
   const productsTotal = saleTotal + rentalTotal;
-  const total = productsTotal + shippingFee;
+  if (productsTotal < 10000) {
+    return json({ error: "La compra mínima es de $10.000 en productos." }, 400);
+  }
+  const total = productsTotal + rentalDepositTotal + shippingFee;
   const advance = saleAdvance + rentalAdvance;
 
   if (total <= 0) {
@@ -1266,7 +1271,7 @@ async function createWebPayment(db: any, body: any) {
       makeOrderData(
         "ALQUILER",
         rentalLines,
-        rentalTotal,
+        rentalTotal + rentalDepositTotal,
         rentalAdvance,
         rentalDeliveryDate
       )
@@ -1348,6 +1353,7 @@ async function createWebPayment(db: any, body: any) {
     summary: {
       total,
       productsTotal,
+      refundableDeposits: rentalDepositTotal,
       shipping: shippingFee,
       shippingNational: deliveryQuote.national,
       shippingStatus: deliveryQuote.status,

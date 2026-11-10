@@ -8,6 +8,11 @@ function checkoutCart() {
         return;
     }
 
+    if (cart.reduce((sum, item) => sum + Number(item.total || 0), 0) < 10000) {
+        alert('La compra mínima es de $10.000 en productos.');
+        return;
+    }
+
     let session = null;
     try { session = JSON.parse(localStorage.getItem('cupissa_client_session') || 'null'); }
     catch (_) { session = null; }

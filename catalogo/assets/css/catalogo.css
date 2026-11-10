@@ -1227,3 +1227,24 @@ body.profile-open #mobile-app-nav { display: flex !important; z-index: 9999; pos
 }
 #products-grid, #season-featured-grid {scroll-behavior:auto;}
 #products-grid .product-card-photo, #season-featured-grid .product-card-photo {will-change:auto;}
+
+/* Solo destacados móviles: anchura compacta y tarjetas homogéneas. */
+@media (max-width: 767px) {
+  #season-featured-grid { align-items: stretch !important; }
+  #season-featured-grid > * {
+    flex: 0 0 min(46vw, 166px) !important;
+    width: min(46vw, 166px) !important;
+    min-width: min(46vw, 166px) !important;
+    height: auto !important;
+    align-self: stretch !important;
+    justify-content: space-between !important;
+  }
+  #season-featured-grid > * > div:first-child { flex: 1 1 auto !important; }
+  #season-featured-grid .product-card-photo {
+    width: 100% !important;
+    height: 148px !important;
+    max-height: 148px !important;
+    object-fit: contain !important;
+  }
+  #season-featured-grid .product-card-title { font-size: 10px !important; }
+}

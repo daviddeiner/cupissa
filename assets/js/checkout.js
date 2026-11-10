@@ -381,7 +381,7 @@
       unit = Number(product.precio_mayorista);
     }
 
-    unit += optionExtra(product.tallas, item.talla);
+    if (!rental) unit += optionExtra(product.tallas, item.talla);
     unit += optionExtra(product.colores, item.color);
     unit += optionExtra(product.accesorios, item.accesorio);
 
@@ -731,11 +731,7 @@
           initialUnit * quantity * percentage / 100
         ),
         deposito: rental
-          ? Number(
-              product.valor_deposito ||
-              item.deposito ||
-              0
-            ) * quantity
+          ? Math.max(0, Number(product.valor_deposito || 0)) * quantity
           : 0,
         diasPreparacion: rental
           ? 0
@@ -1174,8 +1170,14 @@
     };
   }
 
+  function refundableDepositTotal() {
+    return productLines.reduce((sum, line) => sum +
+      (line.modalidad === 'ALQUILER' ? Math.max(0, Number(line.deposito || 0)) : 0), 0);
+  }
+
   function orderTotal() {
-    return Math.max(0, Number(cartTotal || 0) + (deliveryIsNational ? 0 : Number(deliveryFee || 0)));
+    return Math.max(0, Number(cartTotal || 0) + refundableDepositTotal() +
+      (deliveryIsNational ? 0 : Number(deliveryFee || 0)));
   }
 
   function orderTotalLabel() {
@@ -1205,6 +1207,8 @@
     }
     if ($('checkout-grand-total')) $('checkout-grand-total').textContent = totalText;
     if ($('checkout-subtotal')) $('checkout-subtotal').textContent = money(cartTotal);
+    if ($('checkout-refund-deposit')) $('checkout-refund-deposit').textContent = money(refundableDepositTotal());
+    if ($('checkout-refund-deposit-row')) $('checkout-refund-deposit-row').classList.toggle('hidden', refundableDepositTotal() === 0);
     if ($('pay-total-value')) $('pay-total-value').textContent = money(orderTotal());
 
     const disclaimer = $('checkout-shipping-disclaimer');
@@ -1625,6 +1629,8 @@
     if ($('checkout-subtotal')) {
       $('checkout-subtotal').textContent = money(cartTotal);
     }
+    if ($('checkout-refund-deposit')) $('checkout-refund-deposit').textContent = money(refundableDepositTotal());
+    if ($('checkout-refund-deposit-row')) $('checkout-refund-deposit-row').classList.toggle('hidden', refundableDepositTotal() === 0);
 
     if ($('checkout-grand-total')) {
       $('checkout-grand-total').textContent = orderTotalLabel();

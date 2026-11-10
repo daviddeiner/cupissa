@@ -39,13 +39,15 @@ function openCartModal() {
                         <p>Agrega tus productos favoritos y aquí podrás revisar tu pedido.</p>
                     </div>`;
                 document.getElementById('cart-total-amount').innerText = '$ 0';
-                document.getElementById('cart-total-anticipo').innerText = '$ 0';
+                document.getElementById('cart-total-anticipo').innerText = 'Faltan $10.000';
+                const emptyCheckout = document.getElementById('cart-checkout-button');
+                if (emptyCheckout) { emptyCheckout.disabled = true; emptyCheckout.style.opacity = '.45'; emptyCheckout.style.cursor = 'not-allowed'; }
                 return;
             }
 
             cart.forEach((item, index) => {
-                grandTotal += item.total;
-                grandAnticipo += item.valorAnticipo;
+                grandTotal += Number(item.total || 0);
+                grandAnticipo += Number(item.valorAnticipo || 0);
 
                 const card = document.createElement('div');
                 card.className = "flex items-center space-x-3 bg-slate-50 p-3 rounded-2xl border border-slate-100 text-xs";
@@ -59,6 +61,7 @@ function openCartModal() {
                             ${item.accesorio ? `<span class="inline-flex items-center gap-1">${item.accesorioFoto ? `<img src="${item.accesorioFoto}" alt="${item.accesorio}" class="w-7 h-7 object-cover rounded-md border">` : ''}Accesorio: ${item.accesorio}</span>` : ''}
                         </div>
                         <div class="font-bold fuchsia-text mt-1">${formatCOP(item.total)} (Anticipo: ${formatCOP(item.valorAnticipo)})</div>
+                        ${item.modalidad === 'ALQUILER' && Number(item.deposito || 0) > 0 ? `<div class="text-[10px] text-amber-700 font-semibold mt-1">Depósito reembolsable: ${formatCOP(item.deposito)}</div>` : ''}
                     </div>
                     <div class="flex items-center space-x-2">
                         <span class="font-black text-slate-700">x${item.cantidad}</span>
@@ -68,8 +71,12 @@ function openCartModal() {
                 container.appendChild(card);
             });
 
-            document.getElementById('cart-total-amount').innerText = formatCOP(grandTotal);
-            document.getElementById('cart-total-anticipo').innerText = formatCOP(grandAnticipo);
+            const refundableDeposits = cart.reduce((sum, item) => sum +
+                (item.modalidad === 'ALQUILER' ? Math.max(0, Number(item.deposito || 0)) : 0), 0);
+            document.getElementById('cart-total-amount').innerText = formatCOP(grandTotal + refundableDeposits);
+            document.getElementById('cart-total-anticipo').innerText = grandTotal >= 10000 ? 'Mínimo cumplido' : `Faltan ${formatCOP(10000 - grandTotal)}`;
+            const checkoutButton = document.getElementById('cart-checkout-button');
+            if (checkoutButton) { checkoutButton.disabled = grandTotal < 10000; checkoutButton.style.opacity = grandTotal < 10000 ? '.45' : ''; checkoutButton.style.cursor = grandTotal < 10000 ? 'not-allowed' : ''; }
         }
 
         function removeCartItem(index) {
