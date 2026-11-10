@@ -290,6 +290,23 @@
     return true;
   }
 
+  // Permite continuar un registro de cliente invitado, manteniendo las
+  // comprobaciones de duplicados para los demás registros.
+  async function checkPendingCustomerInvite(email, phone) {
+    const correo = validateEmail(email);
+    const telefono = cleanPhone(phone).replace(/\D/g, '').slice(-10);
+    if (telefono.length < 7) return false;
+    const { data, error } = await db.functions.invoke('cupissa-emails', {
+      body: { action: 'check_pending_customer_invite', email: correo, telefono }
+    });
+    // Si la función no está desplegada, no se omiten controles de duplicados.
+    if (error || !data || data.ok !== true) {
+      console.warn('[CUPISSA AUTH] No fue posible comprobar la invitación pendiente.', error || data);
+      return false;
+    }
+    return data.result?.eligible === true;
+  }
+
   /* ============================================================
      REGISTRO TRADICIONAL
      Crea el usuario Auth y envía OTP de registro.
@@ -300,7 +317,8 @@
     email,
     nombres,
     apellidos,
-    telefono
+    telefono,
+    invited = false
   }) {
     const correo = validateEmail(email);
     const celular = cleanPhone(telefono);
@@ -317,8 +335,14 @@
       throw new Error('Ingresa tu número de teléfono.');
     }
 
-    await checkPhoneAvailable(celular);
-    await checkEmailAvailable(correo);
+    // Solo una invitación pendiente verificada contra clientes_web/Auth
+    // permite conservar la ficha existente y solicitar el OTP.
+    const pendingInvite = invited === true &&
+      await checkPendingCustomerInvite(correo, celular);
+    if (!pendingInvite) {
+      await checkPhoneAvailable(celular);
+      await checkEmailAvailable(correo);
+    }
 
     const { data, error } = await db.auth.signInWithOtp({
       email: correo,
@@ -809,6 +833,7 @@
 
     checkPhoneAvailable,
     checkEmailAvailable,
+    checkPendingCustomerInvite,
 
     signUp,
     verifySignupOtp,
