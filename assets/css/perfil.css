@@ -38,3 +38,11 @@
 .profile-order-sticky-note p{margin:0;color:#624b24;font-size:12px;line-height:1.6;white-space:pre-wrap}
 .profile-order-sticky-note-detail{padding:15px 17px}
 .profile-order-sticky-note-detail p{font-size:13px}
+
+/* CUPISSA 2026 | Comprobante privado de entrega */
+.cupissa-delivery-client-button{display:block;width:100%;margin:9px 0 16px;padding:13px 16px;border:1px solid #f9a8d4;border-radius:13px;background:#fdf2f8;color:#9d174d;font-size:12px;font-weight:900;text-align:center;cursor:pointer}
+.cupissa-delivery-client-overlay{position:fixed;z-index:99999;inset:0;background:#0f0614cc;padding:13px;display:grid;place-items:center;overflow-y:auto}
+.cupissa-delivery-client-panel{width:min(100%,465px);max-height:93dvh;overflow-y:auto;background:#fff;border-radius:20px;padding:22px;box-shadow:0 20px 65px #0004;color:#191322}
+.cupissa-delivery-client-panel h2{font-size:20px;font-weight:900}.cupissa-delivery-client-panel h3{font-size:12px;font-weight:900;margin:16px 0 8px}.cupissa-delivery-client-panel p{font-size:11px;color:#8b7486;margin:5px 0}
+.cupissa-delivery-client-panel img{max-width:100%;width:100%;max-height:280px;object-fit:contain;border-radius:13px;border:1px solid #eadce5;background:#fafafa}
+.cupissa-delivery-client-close{float:right;background:#fdf2f8;color:#9d174d;border-radius:11px;padding:9px;font-size:12px;font-weight:900}

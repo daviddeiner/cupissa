@@ -1,0 +1,7 @@
+CUPISSA | PERFIL DE CLIENTES
+La página conserva catálogo, registro, crédito y pagos.
+Se eliminó el modo de caché offline anterior; todo usa conexión directa.
+Se incorporó el botón "Ver entrega" exclusivamente para pedidos en estado
+ENTREGADO que tengan foto y firma confirmadas en el nuevo módulo de domicilios.
+El botón requiere la instalación del SQL y Edge Function del ZIP de ADMIN.
+La evidencia se visualiza mediante enlaces privados temporales autenticados.

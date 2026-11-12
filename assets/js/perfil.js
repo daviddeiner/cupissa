@@ -1679,6 +1679,22 @@
         </button>
       `;
     }).join('');
+    // Los comprobantes se muestran solo después de que Supabase confirma
+    // que el pedido fue ENTREGADO y existen fotografía y firma privadas.
+    const {data:deliveries,error:deliveryError}=await clientDb.rpc('cupissa_domicilios_entregas_cliente');
+    window.__cupissaDeliveryOrderIds = new Set((Array.isArray(deliveries)?deliveries:[]).map(row=>String(row.pedido_id)));
+    if (!deliveryError) {
+      container.querySelectorAll('.profile-order-card').forEach((card,index)=>{
+        const order=orders[index];
+        if (!order || String(order.estado||'').trim().toUpperCase()!=='ENTREGADO'
+            || !window.__cupissaDeliveryOrderIds.has(String(order.id))) return;
+        const button=document.createElement('button');button.type='button';
+        button.className='cupissa-delivery-client-button';
+        button.textContent='Ver entrega · Foto y firma';
+        button.onclick=()=>window.cupissaVerEntregaCliente(order.id);
+        card.insertAdjacentElement('afterend',button);
+      });
+    } else console.warn('[CUPISSA] La consulta de comprobantes requiere instalar el SQL de domicilios:',deliveryError.message);
   }
 
   /* ============================================================
@@ -1825,11 +1841,37 @@
       }
     `;
 
+    if (String(order.estado||'').trim().toUpperCase()==='ENTREGADO'
+        && window.__cupissaDeliveryOrderIds?.has(String(order.id))) {
+      const b=document.createElement('button');b.type='button';
+      b.className='cupissa-delivery-client-button';
+      b.textContent='Ver entrega · Fotografía y firma del cliente';
+      b.onclick=()=>window.cupissaVerEntregaCliente(order.id);
+      $('profile-order-detail').appendChild(b);
+    }
     $('profile-order-modal').classList.remove('hidden');
   };
 
   window.closeProfileOrder = function () {
     $('profile-order-modal')?.classList.add('hidden');
+  };
+
+  // Las URLs privadas expiran después de 5 minutos; se solicitan únicamente
+  // cuando el cliente autenticado abre su propio comprobante.
+  window.cupissaVerEntregaCliente=async function(pedidoId) {
+    try {
+      const {data,error}=await clientDb.functions.invoke('cupissa-domicilios',{
+        body:{action:'view_delivery',pedido_id:String(pedidoId)}
+      });
+      if(error||!data?.ok) throw new Error(data?.error||error?.message||'No se pudo consultar la entrega.');
+      document.getElementById('cupissa-delivery-client-proof')?.remove();
+      const overlay=document.createElement('div');overlay.id='cupissa-delivery-client-proof';
+      overlay.className='cupissa-delivery-client-overlay';
+      overlay.innerHTML=`<div role="dialog" aria-modal="true" aria-label="Entrega de tu pedido" class="cupissa-delivery-client-panel"><button type="button" class="cupissa-delivery-client-close">Cerrar ×</button><h2>Tu pedido fue entregado</h2><p>Comprobante de entrega · ${safe(new Date(data.entregado_en).toLocaleString('es-CO'))}</p><h3>Fotografía de la entrega</h3><img src="${safe(data.foto_url)}" alt="Fotografía de la entrega"><h3>Firma del cliente</h3><img src="${safe(data.firma_url)}" alt="Firma del cliente"></div>`;
+      overlay.querySelector('button').onclick=()=>overlay.remove();
+      overlay.addEventListener('click',event=>{if(event.target===overlay)overlay.remove();});
+      document.body.appendChild(overlay);
+    }catch(error){alert('No pudimos mostrar tu comprobante de entrega: '+(error.message||error));}
   };
 
   /* ============================================================
