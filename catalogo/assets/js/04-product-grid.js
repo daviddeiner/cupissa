@@ -101,7 +101,24 @@ function renderSeasonFeatured() {
         return;
     }
     section.classList.remove('hidden');
-    if (name) name.textContent = featuredSeasonName ? `· ${featuredSeasonName}` : '';
+    if (name) {
+        name.textContent = featuredSeasonName ? `· ${featuredSeasonName}` : '';
+        name.style.cursor = featuredSeasonName ? 'pointer' : '';
+        name.setAttribute('role', 'button');
+        name.tabIndex = 0;
+        name.title = 'Ver todos los productos de esta temporada';
+        const selectFeaturedSeason = () => {
+            if (!featuredSeasonName) return;
+            activeMundo = 'TODOS';
+            activeCategoria = 'TODAS';
+            activeSubcategoria = 'TODAS';
+            const search = document.getElementById('smart-search-input');
+            if (search) search.value = '';
+            filterByTemporada(String(featuredSeasonName).trim().toUpperCase());
+        };
+        name.onclick = selectFeaturedSeason;
+        name.onkeydown = event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); selectFeaturedSeason(); } };
+    }
     // Conservar las tarjetas destacadas existentes cuando se añade otro lote.
     // No borrar la grilla antes de comparar la lista actual.
     const featuredKey = featuredSeasonProducts.map(product => String(product.id)).join('|');
