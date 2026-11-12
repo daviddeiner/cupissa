@@ -11,7 +11,7 @@ function shuffleArray(array) {
             return array;
         }
 
-        const CUPISSA_CATALOG_PAGE_SIZE = 500;
+        const CUPISSA_CATALOG_PAGE_SIZE = 1000;
         // Diversidad editorial: evita secuencias extensas del mismo mundo,
         // categoría, subcategoría o temporada sin esconder publicaciones.
         // Opera en memoria sobre cada lote: no cambia SQL, precios ni filtros.
@@ -56,7 +56,7 @@ function shuffleArray(array) {
             });
             preceding.forEach(product => register(describe(product)));
             while (pending.length) {
-                const candidates = Math.min(42, pending.length);
+                const candidates = Math.min(64, pending.length);
                 let best = 0, bestScore = Infinity;
                 for (let i = 0; i < candidates; i++) {
                     const tags = pending[i].tags;
@@ -80,9 +80,9 @@ function shuffleArray(array) {
                 if (recent.length > 20) recent.shift();
                 // Barajar la ventana de candidatos a medida que avanza la selección.
                 // Así todo el lote compite, no solamente sus primeras filas.
-                if (pending.length > 42) {
-                    const from = Math.floor(Math.random() * (pending.length - 41)) + 41;
-                    const to = Math.floor(Math.random() * 42);
+                if (pending.length > 64) {
+                    const from = Math.floor(Math.random() * (pending.length - 63)) + 63;
+                    const to = Math.floor(Math.random() * 64);
                     [pending[from], pending[to]] = [pending[to], pending[from]];
                 }
             }
@@ -323,6 +323,28 @@ function shuffleArray(array) {
             }
         }
 
+        // Descarga progresiva continua de páginas de 1000 después del primer lote.
+        // Un único request simultáneo para mantener receptiva la tienda.
+        let catalogPrefetchScheduled = false;
+        function prefetchRemainingCatalogPages() {
+            if (catalogPrefetchScheduled) return;
+            catalogPrefetchScheduled = true;
+            const step = async () => {
+                if (!catalogSupabaseHasMore || !catalogSupabaseInitialized) {
+                    catalogPrefetchScheduled = false;
+                    return;
+                }
+                if (document.hidden || !navigator.onLine || catalogSupabaseLoading) {
+                    window.setTimeout(step, 750);
+                    return;
+                }
+                await loadNextCatalogProductsPage();
+                if (catalogSupabaseHasMore) window.setTimeout(step, 120);
+                else catalogPrefetchScheduled = false;
+            };
+            window.setTimeout(step, 180);
+        }
+
         window.loadNextCupissaCatalogPage = loadNextCatalogProductsPage;
         window.hasMoreCupissaCatalogProducts = () => catalogSupabaseHasMore;
 
@@ -366,6 +388,7 @@ function shuffleArray(array) {
                 applyFiltersAndSearch();
             }
             if (typeof setupAutomaticProductLoading === 'function') setupAutomaticProductLoading();
+            prefetchRemainingCatalogPages();
             setupCatalogRealtimeAppendOnly();
         }
 

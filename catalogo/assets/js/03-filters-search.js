@@ -195,7 +195,7 @@ function filterBySubcategoria(subcat) {
             if (candidateToken.includes(queryToken) || queryToken.includes(candidateToken)) return 68;
 
             const longest = Math.max(queryToken.length, candidateToken.length);
-            const tolerance = longest >= 8 ? 2 : (longest >= 4 ? 1 : 0);
+            const tolerance = longest >= 10 ? 3 : (longest >= 6 ? 2 : (longest >= 4 ? 1 : 0));
             if (tolerance) {
                 const distance = boundedEditDistance(queryToken, candidateToken, tolerance);
                 if (distance <= tolerance) return distance === 1 ? 58 : 42;
@@ -227,7 +227,9 @@ function filterBySubcategoria(subcat) {
                 { value: (product.categorias || [product.categoria]).join(' '), weight: 0.70 },
                 { value: (product.mundos || [product.mundo]).join(' '), weight: 0.55 },
                 { value: (product.temporadas || [product.temporada]).join(' '), weight: 0.45 },
-                { value: product.descripcion, weight: 0.28 }
+                { value: product.descripcion, weight: 0.40 },
+                { value: (product.colores || []).map(x => typeof x === 'string' ? x : x?.nombre).join(' '), weight: 0.18 },
+                { value: (product.accesorios || []).map(x => typeof x === 'string' ? x : x?.nombre).join(' '), weight: 0.14 }
             ].map(field => ({
                 text: normalizeSearchText(field.value),
                 words: searchTokens(field.value),

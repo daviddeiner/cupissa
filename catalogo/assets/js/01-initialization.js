@@ -1,4 +1,4 @@
-/** CUPISSA | 500 registros por consulta; tarjetas progresivas por proximidad al scroll. */
+/** CUPISSA | 1000 registros por consulta; tarjetas progresivas por proximidad al scroll. */
 let productsBatchPending = false;
 let productsAutoLoadTimer = null;
 let catalogScrollObserver = null;

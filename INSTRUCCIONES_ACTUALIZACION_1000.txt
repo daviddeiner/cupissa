@@ -1,0 +1,5 @@
+CATÁLOGO CUPISSA: consulta en lotes de 1000; carga continua progresiva,
+destacados filtrables desde su encabezado o fondo, diversidad mejorada,
+búsqueda con tolerancia a errores y casillas obligatorias de consentimiento
+en registro manual y en alta de Google.
+Supabase Data API > Max Rows: revisar que admita al menos 1000.

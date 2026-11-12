@@ -101,23 +101,36 @@ function renderSeasonFeatured() {
         return;
     }
     section.classList.remove('hidden');
+    const selectFeaturedSeason = () => {
+        if (!featuredSeasonName) return;
+        activeMundo = 'TODOS';
+        activeCategoria = 'TODAS';
+        activeSubcategoria = 'TODAS';
+        const search = document.getElementById('smart-search-input');
+        if (search) search.value = '';
+        filterByTemporada(String(featuredSeasonName).trim().toUpperCase());
+    };
+    // El encabezado completo selecciona la temporada; las tarjetas conservan su modal.
+    const heading = section.querySelector('h1, h2, h3, [data-season-heading]') || section.querySelector('header');
+    [heading, name].filter(Boolean).forEach(target => {
+        target.style.cursor = 'pointer';
+        target.title = 'Ver todos los productos de la temporada destacada';
+        target.setAttribute('role', 'button');
+        target.tabIndex = 0;
+        target.onclick = selectFeaturedSeason;
+        target.onkeydown = event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); selectFeaturedSeason(); } };
+    });
+    section.onclick = event => {
+        // Favoritos, carrito, tarjetas y fotografías mantienen su comportamiento.
+        if (event.target.closest('#season-featured-grid, button, a, input')) return;
+        selectFeaturedSeason();
+    };
     if (name) {
         name.textContent = featuredSeasonName ? `· ${featuredSeasonName}` : '';
         name.style.cursor = featuredSeasonName ? 'pointer' : '';
         name.setAttribute('role', 'button');
         name.tabIndex = 0;
         name.title = 'Ver todos los productos de esta temporada';
-        const selectFeaturedSeason = () => {
-            if (!featuredSeasonName) return;
-            activeMundo = 'TODOS';
-            activeCategoria = 'TODAS';
-            activeSubcategoria = 'TODAS';
-            const search = document.getElementById('smart-search-input');
-            if (search) search.value = '';
-            filterByTemporada(String(featuredSeasonName).trim().toUpperCase());
-        };
-        name.onclick = selectFeaturedSeason;
-        name.onkeydown = event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); selectFeaturedSeason(); } };
     }
     // Conservar las tarjetas destacadas existentes cuando se añade otro lote.
     // No borrar la grilla antes de comparar la lista actual.

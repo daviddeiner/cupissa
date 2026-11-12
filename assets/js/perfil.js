@@ -591,6 +591,11 @@
      ============================================================ */
 
   window.registerWithGoogle = async function () {
+    if (!$('profile-consent-register')?.checked) {
+      showMessage('profile-register-error', 'Debes autorizar el tratamiento de datos y el envío de correos antes de registrarte.');
+      $('profile-consent-register')?.focus();
+      return;
+    }
     if (startGoogleFromProfile('register')) return;
     hideMessage('profile-register-error');
 
@@ -728,6 +733,11 @@
   };
 
   window.completeGoogleRegistration = async function () {
+    if (!$('profile-consent-google')?.checked) {
+      showFlowMessage('profile-google-register-error', 'Debes autorizar el tratamiento de datos y el envío de correos antes de crear la cuenta.');
+      $('profile-consent-google')?.focus();
+      return;
+    }
     hideFlowMessage('profile-google-register-error');
 
     if (!googleOtpVerified) {
@@ -811,6 +821,11 @@
 
   window.registerProfile = async function (event) {
     event.preventDefault();
+    if (!$('profile-consent-register')?.checked) {
+      showMessage('profile-register-error', 'Debes autorizar el tratamiento de datos y el envío de correos antes de crear la cuenta.');
+      $('profile-consent-register')?.focus();
+      return;
+    }
 
     hideMessage('profile-register-error');
     hideMessage('profile-register-success');

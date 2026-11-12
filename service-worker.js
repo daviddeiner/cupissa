@@ -1,5 +1,5 @@
 /* CUPISSA | Offline progresivo seguro: no convierte pagos ni créditos en acciones locales. */
-const VERSION='20261112-offline-v1-web';
+const VERSION='20261112-catalog-1000-v2-web';
 const SHELL='cupissa-shell-'+VERSION;
 const DATA='cupissa-data-'+VERSION;
 const MEDIA='cupissa-media-'+VERSION;
