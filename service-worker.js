@@ -1,172 +1,118 @@
-/* CUPISSA | PWA Service Worker. Versionar esta constante cuando se publiquen cambios. */
-const CUPISSA_CACHE = 'cupissa-app-shell-20261112-featured-click-1';
-const CUPISSA_CACHE_PREFIX = 'cupissa-app-shell-';
-const CUPISSA_ASSETS = [
-  'index.html',
-  'catalogo/',
-  'checkout/',
-  'assets/data/domicilios.json',
-  'perfil/',
-  'portal-pagos/',
-  'terminos-y-condiciones/',
-  'terminos-credito/',
-  'politicas-anticipos/',
-  'tratamiento-datos/',
-  'politica-de-datos-personales/',
-  'politica-de-compras-y-garantias/',
-  'credito-cupissa/',
-  'politica-y-condiciones-de-alquileres/',
-  'catalogo/manifest.webmanifest',
-  'catalogo/assets/css/catalogo.css?v=20261110-ajustes-1',
-  'catalogo/assets/css/ficha-producto-movil.css?v=20261108-detalles-movil-1',
-  'catalogo/assets/js/00-config-state.js?v=20261109-500-fast-mix-v1',
-  'catalogo/assets/js/01-initialization.js?v=20261110-ajustes-1',
-  'catalogo/assets/js/01-tailwind-config.js',
-  'catalogo/assets/js/02-product-data.js?v=20261110-ajustes-1',
-  'catalogo/assets/js/03-filters-search.js?v=20261107-banner20-auto5-v1',
-  'catalogo/assets/js/04-product-grid.js?v=20261112-temporada-1',
-  'catalogo/assets/js/05-product-modal.js?v=20261110-deposito-2',
-  'catalogo/assets/js/06-cart-favorites-state.js?v=20261110-ajustes-1',
-  'catalogo/assets/js/07-cart.js?v=20261110-deposito-2',
-  'catalogo/assets/js/08-checkout.js?v=20261110-ajustes-1',
-  'catalogo/assets/js/09-favorites.js',
-  'catalogo/assets/js/10-formatters.js',
-  'catalogo/assets/js/11-responsive-navigation.js?v=20261107-portal-restauracion-simple-v4',
-  'catalogo/assets/js/12-cart-animation.js',
-  'catalogo/assets/js/13-brand-ui.js',
-  'catalogo/assets/js/14-product-activity.js?v=20261108-ranking-1',
-  'catalogo/assets/js/16-product-recommendations.js?v=20261108-similares-1',
-  'catalogo/assets/js/ficha-producto-movil.js?v=20261108-detalles-movil-1',
-  'catalogo/assets/js/15-pwa-install.js',
-  'catalogo/assets/images/logo.png',
-  'catalogo/assets/images/favicon.png',
-  'catalogo/assets/images/app-icon-192.png',
-  'catalogo/assets/images/app-icon-512.png',
-  'catalogo/assets/images/app-icon-180.png',
-  'assets/css/checkout.css',
-  'assets/js/checkout.js?v=20261110-deposito-2',
-  'assets/css/perfil.css?v=20261108-nota-cliente-v1',
-  'assets/js/perfil.js?v=20261110-auth-real-7',
-  'shared/js/cupissa-auth.js?v=20261110-auth-real-7',
-  'shared/js/supabase-config.js',
-  'portal-pagos/index.html',
-  'portal-pagos/assets/css/portal.css',
-  'portal-pagos/assets/js/02-supabase-config-state.js',
-  'portal-pagos/assets/js/04-session.js?v=20261107-portal-restauracion-simple-v4',
-  'portal-pagos/assets/js/05-authentication.js?v=20261107-otp-google',
-  'portal-pagos/assets/js/06-client-dashboard.js?v=20261107-cuotas',
-  'portal-pagos/assets/js/07-payment-options.js',
-  'portal-pagos/assets/js/08-payment-gateway.js',
-  'portal-pagos/assets/js/09-formatters.js',
-  'portal-pagos/services/wompi/02-date-and-late-fees.js',
-  'portal-pagos/services/wompi/04-checkout.js?v=20261109-soledad-12000-v4',
-  'portal-pagos/services/wompi/03-payment-service.js?v=20261107-otp-auth'
-];
-
-self.addEventListener('install', event => {
-  event.waitUntil((async () => {
-    const cache = await caches.open(CUPISSA_CACHE);
-    const cacheKeys = await caches.keys();
-    const previousNames = cacheKeys
-      .filter(name => name.startsWith(CUPISSA_CACHE_PREFIX) && name !== CUPISSA_CACHE)
-      .sort();
-    const previousName = previousNames[previousNames.length - 1];
-
-    // Copiar el app shell anterior. Los recursos que no cambien podrán reutilizarse
-    // y la revalidación HTTP descargará únicamente los archivos modificados.
-    if (previousName) {
-      const previous = await caches.open(previousName);
-      for (const request of await previous.keys()) {
-        if (await cache.match(request)) continue;
-        const response = await previous.match(request);
-        if (response) await cache.put(request, response);
-      }
+/* CUPISSA | Offline progresivo seguro: no convierte pagos ni créditos en acciones locales. */
+const VERSION='20261112-offline-v1-web';
+const SHELL='cupissa-shell-'+VERSION;
+const DATA='cupissa-data-'+VERSION;
+const MEDIA='cupissa-media-'+VERSION;
+const APP_SHELL=["./.vscode/settings.json", "./404.html", "./assets/css/checkout.css", "./assets/css/perfil.css", "./assets/data/domicilios.json", "./assets/js/checkout.js", "./assets/js/perfil.js", "./catalogo.html", "./catalogo/assets/css/catalogo.css", "./catalogo/assets/css/ficha-producto-movil.css", "./catalogo/assets/images/app-icon-180.png", "./catalogo/assets/images/app-icon-192.png", "./catalogo/assets/images/app-icon-512.png", "./catalogo/assets/images/favicon.png", "./catalogo/assets/images/logo.png", "./catalogo/assets/js/00-config-state.js", "./catalogo/assets/js/01-initialization.js", "./catalogo/assets/js/01-tailwind-config.js", "./catalogo/assets/js/02-product-data.js", "./catalogo/assets/js/03-filters-search.js", "./catalogo/assets/js/04-product-grid.js", "./catalogo/assets/js/05-product-modal.js", "./catalogo/assets/js/06-cart-favorites-state.js", "./catalogo/assets/js/07-cart.js", "./catalogo/assets/js/08-checkout.js", "./catalogo/assets/js/09-favorites.js", "./catalogo/assets/js/10-formatters.js", "./catalogo/assets/js/11-responsive-navigation.js", "./catalogo/assets/js/12-cart-animation.js", "./catalogo/assets/js/13-brand-ui.js", "./catalogo/assets/js/14-product-activity.js", "./catalogo/assets/js/15-pwa-install.js", "./catalogo/assets/js/16-product-recommendations.js", "./catalogo/assets/js/cupissa-views-tracker.js", "./catalogo/assets/js/ficha-producto-movil.js", "./catalogo/catalogo.html", "./catalogo/index.html", "./catalogo/legal/politicas-anticipos.html", "./catalogo/legal/terminos-credito.html", "./catalogo/legal/tratamiento-datos.html", "./catalogo/manifest.webmanifest", "./catalogo/services/catalog-service.js", "./checkout.html", "./checkout/index.html", "./credito-cupissa/index.html", "./index.html", "./offline/estado.js", "./pago-resultado.html", "./perfil.html", "./perfil/index.html", "./politica-de-compras-y-garantias/index.html", "./politica-de-datos-personales/index.html", "./politica-y-condiciones-de-alquileres/index.html", "./politicas-anticipos.html", "./politicas-anticipos/index.html", "./portal-pagos/assets/css/portal.css", "./portal-pagos/assets/js/00-tailwind-setup.js", "./portal-pagos/assets/js/01-tailwind-config.js", "./portal-pagos/assets/js/02-supabase-config-state.js", "./portal-pagos/assets/js/03-notifications.js", "./portal-pagos/assets/js/04-session.js", "./portal-pagos/assets/js/05-authentication.js", "./portal-pagos/assets/js/06-client-dashboard.js", "./portal-pagos/assets/js/07-payment-options.js", "./portal-pagos/assets/js/08-payment-gateway.js", "./portal-pagos/assets/js/09-formatters.js", "./portal-pagos/index.html", "./portal-pagos/resultado.html", "./portal-pagos/services/wompi/02-date-and-late-fees.js", "./portal-pagos/services/wompi/03-payment-service.js", "./portal-pagos/services/wompi/04-checkout.js", "./service-worker.js", "./shared/js/cupissa-auth.js", "./shared/js/cupissa-back-navigation.js", "./shared/js/security-console-notice.js", "./shared/js/supabase-config.js", "./terminos-credito.html", "./terminos-credito/index.html", "./terminos-y-condiciones/index.html", "./tratamiento-datos.html", "./tratamiento-datos/index.html"];
+const ORIGIN=self.location.origin;
+const SUPABASE_HOST='lkdxtesgwqoizobxaawp.supabase.co';
+const ADMIN=false;
+const CDN_HOSTS=new Set(['cdn.tailwindcss.com','cdn.jsdelivr.net','cdnjs.cloudflare.com','fonts.googleapis.com','fonts.gstatic.com','unpkg.com']);
+const isApi=(url)=>url.hostname===SUPABASE_HOST;
+const isPublicProduct=(url)=>url.pathname==='/rest/v1/productos';
+const allowedRead=(url,request)=>{
+ if(!isApi(url)||request.method!=='GET')return false;
+ if(url.pathname.startsWith('/storage/v1/object/public/'))return true;
+ if(url.pathname.startsWith('/auth/')||url.pathname.startsWith('/functions/')||url.pathname.startsWith('/rpc/'))return false;
+ return ADMIN?url.pathname.startsWith('/rest/v1/'):isPublicProduct(url);
+};
+function cacheKey(request){return request;}
+async function cachedNetwork(request,store,firstCache=false){
+ const cache=await caches.open(store);
+ const saved=await cache.match(cacheKey(request));
+ if(firstCache&&saved){fetch(request).then(res=>{if(res.ok)cache.put(cacheKey(request),res.clone());}).catch(()=>{});return saved;}
+ try {
+  const response=await fetch(request);
+  if(response.ok&&response.type!=='opaque'){
+    try{await cache.put(cacheKey(request),response.clone());}catch(_){}
+  }
+  return response;
+ }catch(err){if(saved)return saved;throw err;}
+}
+self.addEventListener('install',event=>event.waitUntil((async()=>{
+ const cache=await caches.open(SHELL);
+ // Se descargan con concurrencia limitada, sin interrumpir la instalación por un archivo que falle.
+ const queue=[...APP_SHELL]; const workers=Array.from({length:5},async()=>{
+  while(queue.length){const path=queue.shift();try{const req=new Request(new URL(path,self.registration.scope));const response=await fetch(req);if(response.ok)await cache.put(req,response);}catch(_){}}
+ });await Promise.all(workers);await self.skipWaiting();
+})()));
+self.addEventListener('activate',event=>event.waitUntil((async()=>{
+ for(const key of await caches.keys()){
+  if((key.startsWith('cupissa-shell-')||key.startsWith('cupissa-data-')||key.startsWith('cupissa-media-'))&&![SHELL,DATA,MEDIA].includes(key))await caches.delete(key);
+ }await self.clients.claim();
+})()));
+async function notify(type,extra={}){for(const client of await self.clients.matchAll({includeUncontrolled:true,type:'window'})){client.postMessage({type,...extra});}}
+// Las ediciones locales no se marcan como confirmadas en Supabase: quedan en cola con aviso.
+const DBNAME='cupissa-pending-operations-v1';
+function dbOpen(){return new Promise((resolve,reject)=>{const request=indexedDB.open(DBNAME,1);request.onupgradeneeded=()=>request.result.createObjectStore('operations',{keyPath:'id',autoIncrement:true});request.onsuccess=()=>resolve(request.result);request.onerror=()=>reject(request.error);});}
+async function dbAll(){const db=await dbOpen();return new Promise((resolve,reject)=>{const tx=db.transaction('operations','readonly');const req=tx.objectStore('operations').getAll();req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error);tx.oncomplete=()=>db.close();});}
+async function dbPut(entry){const db=await dbOpen();return new Promise((resolve,reject)=>{const tx=db.transaction('operations','readwrite');tx.objectStore('operations').add(entry);tx.oncomplete=()=>{db.close();resolve();};tx.onerror=()=>reject(tx.error);});}
+async function dbDelete(id){const db=await dbOpen();return new Promise((resolve,reject)=>{const tx=db.transaction('operations','readwrite');tx.objectStore('operations').delete(id);tx.oncomplete=()=>{db.close();resolve();};tx.onerror=()=>reject(tx.error);});}
+function mayQueue(req,url,body){
+ if(!ADMIN||req.method!=='PATCH'||!isApi(url)||!url.pathname.startsWith('/rest/v1/'))return false;
+ const table=url.pathname.split('/').pop();
+ if(!['productos','pedidos_web','clientes_web','configuracion_pedidos_web'].includes(table))return false;
+ if(!url.searchParams.has('id'))return false;
+ if(!body||body.length>350000||!req.headers.has('authorization'))return false;
+ try{
+  const changes=JSON.parse(body);if(!changes||typeof changes!=='object'||Array.isArray(changes))return false;
+  const forbidden=['estado','status','entregado','pagado','saldo','cupo','credito','cuota','deuda','anticipo','total','valor'];
+  if(Object.keys(changes).some(k=>forbidden.some(piece=>k.toLowerCase().includes(piece))))return false;
+  // La edición de fotografías debe hacerse con conexión.
+  if(Object.values(changes).some(v=>typeof v==='string'&&v.startsWith('data:image/')))return false;
+  return true;
+ }catch(_){return false;}
+}
+let syncing=false;
+async function syncPending(){
+ if(!ADMIN||syncing)return;syncing=true;
+ try{
+  const entries=await dbAll();let remaining=entries.length;
+  for(const entry of entries){
+   try{
+    const headers=new Headers(entry.headers);
+    const result=await fetch(entry.url,{method:entry.method,headers,body:entry.body});
+    if(!result.ok){await notify('CUPISSA_SYNC_PROBLEM',{status:result.status});break;}
+    await dbDelete(entry.id);remaining--;
+   }catch(_){break;}
+  }
+  await notify('CUPISSA_SYNC_FINISHED',{remaining});
+ }catch(_){await notify('CUPISSA_SYNC_PROBLEM');}finally{syncing=false;}
+}
+self.addEventListener('message',event=>{
+ if(event.data?.type==='CUPISSA_SYNC_PENDING')event.waitUntil(syncPending());
+ if(event.data?.type==='CUPISSA_SKIP_WAITING')self.skipWaiting();
+ if(event.data?.type==='CUPISSA_ADMIN_LOGOUT')event.waitUntil((async()=>{await caches.delete(DATA);await caches.delete(MEDIA);})());
+});
+self.addEventListener('sync',event=>{if(event.tag==='cupissa-pending-edits')event.waitUntil(syncPending());});
+self.addEventListener('fetch',event=>{
+ const request=event.request,url=new URL(request.url);
+ if(request.method!=='GET'){
+  if(ADMIN&&request.method==='PATCH'&&isApi(url)&&url.pathname.startsWith('/rest/v1/')){
+   event.respondWith((async()=>{
+    // Priorizar siempre servidor. En caso de desconexión, solo encolar operaciones permitidas.
+    try{return await fetch(request.clone());}catch(err){
+     let body='';try{body=await request.clone().text();}catch(_){}
+     if(!mayQueue(request,url,body))throw err;
+     await dbPut({url:request.url,method:request.method,headers:[...request.headers],body,createdAt:Date.now()});
+     await notify('CUPISSA_OFFLINE_QUEUED');
+     try{await self.registration.sync?.register('cupissa-pending-edits');}catch(_){}
+     // Supabase parsea respuestas con representación; no devolver datos falsos.
+     return new Response('[]',{status:200,headers:{'content-type':'application/json','x-cupissa-offline-queued':'1'}});
     }
-
-    // Solo precargar el núcleo. Descargar de golpe docenas de páginas y scripts
-    // compite con Supabase en conexiones lentas. Los demás se cachean al utilizarlos.
-    const initialAssets = ['index.html', 'catalogo/', 'catalogo/assets/images/logo.png'];
-    await Promise.all(initialAssets.map(async path => {
-      const url = new URL(path, self.registration.scope);
-      try {
-        const response = await fetch(new Request(url, { cache: 'no-cache' }));
-        if (response && response.ok) await cache.put(url, response);
-      } catch (_) { /* Se mantienen los recursos anteriores si no hay conexión. */ }
-    }));
-
-    // Primera instalación: activar de inmediato. Actualizaciones: esperar al botón del usuario.
-    if (!self.registration.active) await self.skipWaiting();
-  })());
-});
-
-self.addEventListener('message', event => {
-  if (event.data?.type === 'CUPISSA_SKIP_WAITING') {
-    self.skipWaiting();
-  }
-});
-
-self.addEventListener('activate', event => {
-  event.waitUntil((async () => {
-    const keys = await caches.keys();
-    await Promise.all(
-      keys.filter(key => key.startsWith(CUPISSA_CACHE_PREFIX) && key !== CUPISSA_CACHE)
-        .map(key => caches.delete(key))
-    );
-    await self.clients.claim();
-  })());
-});
-
-self.addEventListener('fetch', event => {
-  const request = event.request;
-  if (request.method !== 'GET') return;
-  const url = new URL(request.url);
-  if (url.origin !== self.location.origin) return;
-  if (url.pathname.includes('/rest/v1/') || url.pathname.includes('/storage/v1/') || url.pathname.includes('/functions/v1/')) return;
-
-  if (request.mode === 'navigate') {
-    event.respondWith((async () => {
-      try {
-        const response = await fetch(request);
-        if (response && response.ok) {
-          const cache = await caches.open(CUPISSA_CACHE);
-          await cache.put(request, response.clone());
-        }
-        return response;
-      } catch (_) {
-        const cached = await caches.match(request);
-        return cached || (url.pathname.startsWith('/producto/') ? Response.error() : caches.match(new URL('index.html', self.registration.scope)));
-      }
-    })());
-    return;
-  }
-
-  // Los scripts y estilos se consultan primero en red. Así, una versión antigua
-  // del checkout no puede quedarse activa por una entrada cache-first anterior.
-  if (request.destination === 'script' || request.destination === 'style') {
-    event.respondWith((async () => {
-      try {
-        const response = await fetch(request);
-        if (response && response.ok) {
-          const cache = await caches.open(CUPISSA_CACHE);
-          await cache.put(request, response.clone());
-        }
-        return response;
-      } catch (_) {
-        return (await caches.match(request)) || Response.error();
-      }
-    })());
-    return;
-  }
-
-  event.respondWith((async () => {
-    const cached = await caches.match(request);
-    const network = fetch(request).then(response => {
-      if (response && response.ok) {
-        const copy = response.clone();
-        caches.open(CUPISSA_CACHE).then(cache => cache.put(request, copy));
-      }
-      return response;
-    }).catch(() => cached);
-    return cached || network;
-  })());
+   })());
+  }return;
+ }
+ if(allowedRead(url,request)){
+  event.respondWith(cachedNetwork(request,url.pathname.includes('/storage/')?MEDIA:DATA).catch(()=>Response.error()));return;
+ }
+ if(CDN_HOSTS.has(url.hostname)){
+  event.respondWith(cachedNetwork(request,MEDIA).catch(()=>Response.error()));return;
+ }
+ if(url.origin!==ORIGIN)return;
+ if(request.mode==='navigate'){
+  event.respondWith((async()=>{try{return await cachedNetwork(request,SHELL);}catch(_){const cache=await caches.open(SHELL);return await cache.match(request)||await cache.match(new URL('./index.html',self.registration.scope))||Response.error();}})());return;
+ }
+ // Recursos versionados: servir copia instantáneamente cuando existe y revalidar silenciosamente.
+ event.respondWith(cachedNetwork(request,SHELL,['script','style','image','font'].includes(request.destination)).catch(()=>Response.error()));
 });
