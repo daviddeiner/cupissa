@@ -46,3 +46,6 @@
 .cupissa-delivery-client-panel h2{font-size:20px;font-weight:900}.cupissa-delivery-client-panel h3{font-size:12px;font-weight:900;margin:16px 0 8px}.cupissa-delivery-client-panel p{font-size:11px;color:#8b7486;margin:5px 0}
 .cupissa-delivery-client-panel img{max-width:100%;width:100%;max-height:280px;object-fit:contain;border-radius:13px;border:1px solid #eadce5;background:#fafafa}
 .cupissa-delivery-client-close{float:right;background:#fdf2f8;color:#9d174d;border-radius:11px;padding:9px;font-size:12px;font-weight:900}
+
+.cupissa-delivery-client-button{display:flex!important;align-items:center;justify-content:center;gap:9px;min-height:46px;margin:8px 0 16px!important;background:#fce7f3!important;border:1px solid #f9a8d4;color:#9d174d!important;box-shadow:0 4px 16px #be185d13}
+.cupissa-delivery-proof-notice{font-size:12px;color:#8b5a70;padding:10px;margin:8px 0}
