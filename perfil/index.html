@@ -101,6 +101,17 @@
       }
     })();
   </script>
+<script>
+  if (new URLSearchParams(location.search).get('embedded') === '1') {
+    document.documentElement.classList.add('cupissa-profile-embedded');
+  }
+</script>
+<style>
+  @media (max-width: 767px) {
+    .cupissa-profile-embedded .profile-topbar,
+    .cupissa-profile-embedded #profile-back-button { display: none !important; }
+  }
+</style>
 </head>
 
 <body class="min-h-screen bg-slate-50 text-slate-800 font-sans">

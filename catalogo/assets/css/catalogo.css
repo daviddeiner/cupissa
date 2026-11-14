@@ -1173,7 +1173,35 @@ body.profile-open #mobile-app-nav { display: flex !important; z-index: 9999; pos
 /* El aviso es visible al final de la grilla si aún quedan lotes por cargar. */
 .catalog-infinite-sentinel {height:auto !important; min-height:0 !important; max-height:none !important; margin:10px 0 14px !important; padding:0 !important; overflow:visible !important; opacity:1 !important; pointer-events:auto !important;}
 .catalog-infinite-sentinel.hidden {display:none !important;}
-#scroll-loading-msg:not(.hidden) {display:flex !important;}
+#scroll-loading-msg:not(.hidden) {display:none !important;}
+
+/* CUPISSA WEB móvil: secciones integradas como pantallas, igual que la app. */
+@media (max-width:767px) {
+  #modal-cart, #modal-favorites {
+    position:fixed!important; inset:0 0 var(--mobile-app-nav-height,84px) 0!important;
+    display:flex; background:#f8fafc!important; backdrop-filter:none!important;
+    align-items:stretch!important; justify-content:stretch!important;
+    border-radius:0!important; box-shadow:none!important;
+  }
+  #modal-cart.hidden, #modal-favorites.hidden {display:none!important;}
+  #modal-cart .mobile-drawer-panel, #modal-favorites .mobile-drawer-panel {
+    width:100%!important; max-width:none!important; border-radius:0!important;
+    box-shadow:none!important; padding:18px 15px!important;
+  }
+  #modal-cart .app-web-close, #modal-favorites .app-web-close {display:none!important;}
+  .profile-overlay, .portal-overlay {background:#f8fafc!important; backdrop-filter:none!important;}
+  .profile-overlay-shell, .portal-overlay-shell {box-shadow:none!important;}
+  .profile-overlay-header, .profile-overlay-close,
+  .portal-overlay-header, .portal-overlay-close {display:none!important;}
+  body:not([data-app-section="home"]) #mobile-app-nav .mobile-filter-row {display:none!important;}
+  /* No dejar cruces, botones de cerrar o volver en las pantallas inferiores. */
+  #modal-cart .cupissa-mobile-section-close,
+  #modal-favorites .cupissa-mobile-section-close,
+  #modal-cart .app-web-close,
+  #modal-favorites .app-web-close,
+  #modal-profile .profile-overlay-close,
+  #modal-portal .portal-overlay-close {display:none!important;}
+}
 #scroll-loading-msg.hidden, #scroll-end-msg {display:none !important;}
 
 
