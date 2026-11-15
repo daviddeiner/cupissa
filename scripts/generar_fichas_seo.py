@@ -20,7 +20,7 @@ from urllib.request import Request, urlopen
 from xml.etree import ElementTree as ET
 
 DOMAIN = 'https://cupissa.com'
-MAIN_PAGES = ('/catalogo/', '/terminos-y-condiciones/', '/politica-de-datos-personales/',
+MAIN_PAGES = ('/catalogo/', '/portal-pagos/', '/perfil/', '/terminos-y-condiciones/', '/politica-de-datos-personales/',
               '/politica-de-compras-y-garantias/', '/politica-y-condiciones-de-alquileres/',
               '/politicas-anticipos/', '/terminos-credito/', '/tratamiento-datos/', '/credito-cupissa/')
 BAD_PHOTO = 'via.placeholder.com'
