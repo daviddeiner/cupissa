@@ -797,6 +797,27 @@ async function createWebPayment(db: any, body: any) {
 
   const rentalFactor = 1 + (rentalDays - 1) * 0.5;
 
+  // CUPISSA Tareas: el invitado NO recibe descuento. El invitador solo
+  // obtiene un cupón del 20 % tras 20 aceptaciones, por 7 días y una compra.
+  let rewardUserId = "";
+  let referralDiscount = false;
+  const { data: byLegacyAccount } = await db.from("clientes_web")
+    .select("auth_user_id").eq("cliente_id",String(legacy.id))
+    .not("auth_user_id","is",null).limit(1).maybeSingle();
+  // Nunca aceptar el correo introducido en el formulario como prueba de identidad.
+  if (byLegacyAccount?.auth_user_id) {
+    rewardUserId = String(byLegacyAccount.auth_user_id);
+    const { data: reward } = await db.from("cupissa_referidos")
+      .select("premio_vence_en,premio_usado_en,premio_referencia")
+      .eq("auth_user_id",rewardUserId).maybeSingle();
+    if (reward && !reward.premio_usado_en && !reward.premio_referencia &&
+        Date.parse(String(reward.premio_vence_en || "")) > Date.now()) {
+      const {count} = await db.from("cupissa_referidos")
+        .select("auth_user_id",{count:"exact",head:true}).eq("invitado_por",rewardUserId);
+      referralDiscount = Number(count || 0)>=20;
+    }
+  }
+
   const saleLines: any[] = [];
   const rentalLines: any[] = [];
 
@@ -903,9 +924,10 @@ async function createWebPayment(db: any, body: any) {
       );
     }
 
-    const unit = Math.round(
+    const regularUnit = Math.round(
       initialUnit * (rental ? rentalFactor : 1)
     );
+    const unit = referralDiscount ? Math.round(regularUnit * 0.8) : regularUnit;
 
     const lineTotal = Math.round(unit * quantity);
 
@@ -1208,6 +1230,13 @@ async function createWebPayment(db: any, body: any) {
       .slice(0, 16)
       .toUpperCase()}`;
 
+  if (referralDiscount) {
+    const {data:reserved,error:rewardError}=await db.rpc("cupissa_referral_reserve",{
+      p_usuario:rewardUserId,p_referencia:reference
+    });
+    if (rewardError || reserved !== true) return json({error:"El descuento ya fue utilizado o está reservado para otro pago. Actualiza tu carrito."},409);
+  }
+
   const signature = await sha256Hex(
     `${reference}${amountInCents}COP${integritySecret}`
   );
@@ -1223,7 +1252,9 @@ async function createWebPayment(db: any, body: any) {
   ) => {
     const orderShipping =
       type === shippingOrderType ? shippingFee : 0;
-    const orderTotal = subtotal + orderShipping;
+    // `total` debe contener solo productos y depósitos de alquiler.
+    // El domicilio queda exclusivamente en `envio`, para sumarlo una sola vez al restante.
+    const orderTotal = subtotal;
 
     return {
       cliente_id: String(profile.id),
@@ -1240,7 +1271,7 @@ async function createWebPayment(db: any, body: any) {
       envio: orderShipping,
       anticipo:
         paymentMode === "full"
-          ? orderTotal
+          ? orderTotal + orderShipping
           : orderAdvance,
       productos: lines,
       estado: "AGENDADO",
@@ -1317,6 +1348,8 @@ async function createWebPayment(db: any, body: any) {
           orders_data: ordersData,
           amount_to_pay_cents: amountInCents,
           payment_mode: paymentMode,
+          referral_discount: referralDiscount,
+          referral_inviter_auth_user_id: referralDiscount ? rewardUserId : null,
           rental_days: hasRental ? rentalDays : 0,
           shipping: {
             city: deliveryQuote.city,
@@ -1332,6 +1365,7 @@ async function createWebPayment(db: any, body: any) {
     ]);
 
   if (logError) {
+    if (referralDiscount) await db.rpc("cupissa_referral_release",{p_referencia:reference});
     if (hasSale) {
       await db.rpc(
         "cupissa_liberar_cupo_pedido",
@@ -1469,6 +1503,8 @@ async function finalizeScheduledOrder(
         .eq("id", payment.id);
 
       if (appliedError) throw appliedError;
+
+      if (data.referral_discount) await db.rpc('cupissa_referral_finalize',{p_referencia:reference});
 
       return {
         status: "APPROVED",
@@ -1717,6 +1753,11 @@ async function finalizeScheduledOrder(
 
   if (appliedError) throw appliedError;
 
+  if (data.referral_discount) {
+    const {error:rewardError}=await db.rpc("cupissa_referral_finalize",{p_referencia:reference});
+    if (rewardError) console.error("[CUPISSA] No se pudo marcar descuento consumido:",rewardError.message);
+  }
+
   return {
     status: "APPROVED",
     order: insertedOrders[0] || null,
@@ -1822,6 +1863,10 @@ async function confirmWebPayment(db: any, body: any) {
         },
         202
       );
+    }
+
+    if (payment.datos?.referral_discount) {
+      await db.rpc('cupissa_referral_finalize',{p_referencia:reference});
     }
 
     return json({
@@ -2052,6 +2097,9 @@ Deno.serve(async (req) => {
               "No se pudo liberar el cupo del pago rechazado:",
               releaseError.message
             );
+          }
+          if (failedData.referral_discount) {
+            await db.rpc('cupissa_referral_release',{p_referencia:reference});
           }
         }
       }
