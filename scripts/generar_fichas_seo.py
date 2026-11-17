@@ -349,6 +349,19 @@ def generate(root, products, allow_empty=False):
     valid = [p for p in products if isinstance(p, dict) and str(p.get('oculto', False)).lower() not in ('true', '1') and safe_id(p.get('id'))]
     if not valid and not allow_empty:
         raise RuntimeError('No hay productos públicos válidos; no se cambia nada.')
+    # Si una consulta devuelve inesperadamente solo una parte del catálogo,
+    # no eliminar cientos de fichas ni publicar un sitemap incompleto.
+    previous = root / 'sitemap.xml'
+    if previous.exists() and not allow_empty:
+        try:
+            old_root = ET.parse(previous).getroot()
+            old_count = sum('/producto/' in (item.text or '') for item in
+                            old_root.findall('.//{http://www.sitemaps.org/schemas/sitemap/0.9}loc'))
+        except ET.ParseError as exc:
+            raise RuntimeError('Sitemap anterior inválido; se conservan las fichas.') from exc
+        if old_count >= 20 and len(valid) < old_count * 0.75:
+            raise RuntimeError(f'Caída sospechosa del catálogo ({old_count} → {len(valid)}). '
+                               'No se cambió el sitio; revisar conexión y visibilidad de Supabase.')
     target = root / 'producto'
     target.mkdir(parents=True, exist_ok=True)
     valid_ids = set()
@@ -371,7 +384,10 @@ def generate(root, products, allow_empty=False):
                 pass
     write_sitemaps(root, valid)
     write_pinterest_feed(root, valid)
-    print(f'Fichas indexables generadas: {len(valid)}. Sitemaps y feed actualizados.')
+    photo_count = sum(len(image_urls(p.get('fotos'))[:8]) for p in valid)
+    print(f'Fichas indexables: {len(valid)}; imágenes incluidas en sitemap: {photo_count}; '
+          f'productos sin foto: {sum(not image_urls(p.get("fotos")) for p in valid)}. '
+          'Sitemaps y feed actualizados.')
 
 
 def main():
