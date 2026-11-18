@@ -241,7 +241,7 @@ function openOptionsModal(prodId) {
 
             updateModalidadUI();
 
-            document.getElementById('opt-modal-title').innerText = prod.nombre;
+            document.getElementById('opt-modal-title').innerText = String(prod.nombre || '').toLocaleUpperCase('es-CO');
             const creditLink = document.getElementById('cupissa-credit-whatsapp');
             if (creditLink) {
                 const message = `Hola, quiero solicitar información para pedir a crédito este producto: ${prod.nombre}. Ref: CUP-${String(prod.id).slice(-4)}. ¿Me pueden ayudar?`;
