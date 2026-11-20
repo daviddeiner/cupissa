@@ -435,6 +435,9 @@
     } catch (_) {}
     renderProfile();
     showAccount();
+    if (typeof window.cupissaExperienceProfileUpdated === 'function') {
+      window.cupissaExperienceProfileUpdated(currentProfile, currentClient);
+    }
 
     await loadOrders();
 
@@ -1519,6 +1522,11 @@
 
     window.__cupissaWebOrders = orders;
 
+    if (typeof window.cupissaRenderOrdersV2 === 'function') {
+      await window.cupissaRenderOrdersV2(orders, clientDb);
+      return;
+    }
+
     if (!orders.length) {
       if (errors.length) {
         console.warn('[CUPISSA PEDIDOS] Algunas búsquedas fallaron:', errors);
@@ -1716,6 +1724,8 @@
      DETALLE DE PEDIDO
      ============================================================ */
 
+  window.cupissaReloadOrders = loadOrders;
+
   window.openProfileOrder = function (id) {
     const order = (window.__cupissaWebOrders || [])
       .find(item => String(item.id) === String(id));
@@ -1740,9 +1750,9 @@
       ['Fecha de entrega', order.fecha_entrega],
       ['Estado', order.estado],
       ['Total', money(order.total)],
-      ['Domicilio / envío', money(order.envio ?? order.domicilio_envio)],
+      ['Domicilio / envío', money(order.domicilio_valor ?? order.valor_domicilio ?? order.costo_domicilio ?? order.envio ?? order.domicilio_envio)],
       ['Anticipo', money(order.anticipo)],
-      ['Restante', money(order.restante)],
+      ['Restante por pagar', money(typeof window.cupissaRemainingOrderV2==='function' ? window.cupissaRemainingOrderV2(order) : order.restante)],
       ['Contacto', order.telefono || order.contacto],
       [
         'Ubicación',

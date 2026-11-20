@@ -180,6 +180,7 @@ function addModalProductToCart() {
                 const badge = document.getElementById(id);
                 if (badge) badge.innerText = value;
             });
+            window.cupissaSyncFloatingCartCount?.(cartCount);
         }
 
         function toggleFavorite(prodId, e) {
